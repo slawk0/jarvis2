@@ -1,0 +1,188 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+@custom-variant dark (&:is(.dark *));
+
+/* State variants used by the shadcn-svelte primitives (bits-ui data attributes). */
+@custom-variant data-open (&:where([data-state='open']), &:where([data-open]:not([data-open='false'])));
+@custom-variant data-closed (&:where([data-state='closed']), &:where([data-closed]:not([data-closed='false'])));
+@custom-variant data-checked (&:where([data-state='checked']), &:where([data-checked]:not([data-checked='false'])));
+@custom-variant data-unchecked (&:where([data-state='unchecked']), &:where([data-unchecked]:not([data-unchecked='false'])));
+@custom-variant data-active (&:where([data-state='active']), &:where([data-active]:not([data-active='false'])));
+@custom-variant data-disabled (&:where([data-disabled]:not([data-disabled='false'])), &:where([disabled]));
+@custom-variant data-horizontal (&:where([data-orientation='horizontal']));
+@custom-variant data-vertical (&:where([data-orientation='vertical']));
+
+/*
+ * Design tokens. One set, two themes: light values on :root, dark on .dark.
+ * Components only ever reference the semantic names below.
+ */
+:root {
+	--radius: 0.5rem;
+
+	--background: oklch(0.985 0.003 240);
+	--foreground: oklch(0.21 0.02 245);
+	--card: oklch(1 0 0);
+	--card-foreground: var(--foreground);
+	--popover: oklch(1 0 0);
+	--popover-foreground: var(--foreground);
+	--primary: oklch(0.56 0.11 195);
+	--primary-foreground: oklch(0.99 0.01 195);
+	--secondary: oklch(0.95 0.006 240);
+	--secondary-foreground: var(--foreground);
+	--muted: oklch(0.955 0.006 240);
+	--muted-foreground: oklch(0.5 0.02 245);
+	--accent: oklch(0.94 0.012 220);
+	--accent-foreground: var(--foreground);
+	--destructive: oklch(0.56 0.21 25);
+	--success: oklch(0.55 0.14 152);
+	--warning: oklch(0.66 0.15 70);
+	--info: oklch(0.56 0.14 245);
+	--border: oklch(0.21 0.02 245 / 12%);
+	--input: oklch(0.21 0.02 245 / 18%);
+	--ring: oklch(0.56 0.11 195);
+
+	--sidebar: oklch(0.965 0.005 240);
+	--sidebar-foreground: var(--foreground);
+	--surface-sunken: oklch(0.965 0.005 240);
+	--terminal: oklch(0.99 0.002 240);
+
+	--tag-red: oklch(0.6 0.2 25);
+	--tag-orange: oklch(0.68 0.17 55);
+	--tag-yellow: oklch(0.75 0.15 90);
+	--tag-green: oklch(0.62 0.16 150);
+	--tag-teal: oklch(0.63 0.11 195);
+	--tag-blue: oklch(0.6 0.15 250);
+	--tag-purple: oklch(0.58 0.18 300);
+	--tag-pink: oklch(0.65 0.19 350);
+}
+
+.dark {
+	--background: oklch(0.165 0.012 245);
+	--foreground: oklch(0.93 0.008 240);
+	--card: oklch(0.2 0.014 245);
+	--popover: oklch(0.215 0.015 245);
+	--primary: oklch(0.79 0.125 188);
+	--primary-foreground: oklch(0.19 0.03 200);
+	--secondary: oklch(0.255 0.015 245);
+	--muted: oklch(0.24 0.014 245);
+	--muted-foreground: oklch(0.69 0.018 240);
+	--accent: oklch(0.275 0.02 235);
+	--destructive: oklch(0.68 0.19 24);
+	--success: oklch(0.76 0.16 152);
+	--warning: oklch(0.81 0.15 82);
+	--info: oklch(0.73 0.13 245);
+	--border: oklch(1 0 0 / 9%);
+	--input: oklch(1 0 0 / 14%);
+	--ring: oklch(0.79 0.125 188);
+
+	--sidebar: oklch(0.14 0.012 245);
+	--surface-sunken: oklch(0.14 0.012 245);
+	--terminal: oklch(0.13 0.01 245);
+}
+
+@theme inline {
+	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Code', monospace;
+
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-success: var(--success);
+	--color-warning: var(--warning);
+	--color-info: var(--info);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sunken: var(--surface-sunken);
+	--color-terminal: var(--terminal);
+
+	--color-tag-red: var(--tag-red);
+	--color-tag-orange: var(--tag-orange);
+	--color-tag-yellow: var(--tag-yellow);
+	--color-tag-green: var(--tag-green);
+	--color-tag-teal: var(--tag-teal);
+	--color-tag-blue: var(--tag-blue);
+	--color-tag-purple: var(--tag-purple);
+	--color-tag-pink: var(--tag-pink);
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+		scrollbar-width: thin;
+		scrollbar-color: color-mix(in oklch, var(--foreground) 22%, transparent) transparent;
+	}
+
+	html {
+		font-size: 13px;
+		color-scheme: light;
+	}
+
+	html.dark {
+		color-scheme: dark;
+	}
+
+	html,
+	body {
+		height: 100%;
+		overflow: hidden;
+	}
+
+	body {
+		@apply bg-background text-foreground font-sans antialiased;
+		/* A desktop app: text is not selectable unless a region opts in. */
+		user-select: none;
+		-webkit-user-select: none;
+		cursor: default;
+	}
+
+	input,
+	textarea,
+	[contenteditable='true'],
+	.selectable,
+	.selectable * {
+		user-select: text;
+		-webkit-user-select: text;
+	}
+
+	.selectable {
+		cursor: auto;
+	}
+
+	button:not(:disabled),
+	[role='button']:not([aria-disabled='true']) {
+		cursor: pointer;
+	}
+
+	code,
+	pre,
+	kbd {
+		@apply font-mono;
+	}
+}
+
+@utility tabular {
+	font-variant-numeric: tabular-nums;
+}

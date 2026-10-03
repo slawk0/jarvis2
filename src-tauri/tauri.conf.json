@@ -1,0 +1,67 @@
+{
+	"$schema": "https://schema.tauri.app/config/2",
+	"productName": "Jarvis Server Manager",
+	"mainBinaryName": "jarvis-server-manager",
+	"version": "../package.json",
+	"identifier": "com.jarvis.servermanager",
+	"build": {
+		"beforeDevCommand": "pnpm dev",
+		"devUrl": "http://localhost:1420",
+		"beforeBuildCommand": "pnpm build",
+		"frontendDist": "../build"
+	},
+	"app": {
+		"windows": [
+			{
+				"label": "main",
+				"title": "Jarvis Server Manager",
+				"width": 1500,
+				"height": 800,
+				"minWidth": 960,
+				"minHeight": 600,
+				"decorations": true,
+				"dragDropEnabled": true
+			}
+		],
+		"security": {
+			"csp": {
+				"default-src": "'self'",
+				"script-src": "'self'",
+				"style-src": "'self' 'unsafe-inline'",
+				"img-src": "'self' data: blob:",
+				"font-src": "'self' data:",
+				"worker-src": "'self' blob:",
+				"connect-src": "ipc: http://ipc.localhost",
+				"object-src": "'none'",
+				"base-uri": "'self'",
+				"form-action": "'none'"
+			}
+		}
+	},
+	"bundle": {
+		"active": true,
+		"targets": ["nsis", "msi", "deb", "rpm", "appimage"],
+		"createUpdaterArtifacts": true,
+		"category": "DeveloperTool",
+		"shortDescription": "Manage Linux servers over SSH",
+		"longDescription": "Desktop GUI for everyday administration of Linux servers over SSH: monitoring, terminal, files, Docker, systemd, firewall, databases, backups and more.",
+		"icon": [
+			"icons/32x32.png",
+			"icons/128x128.png",
+			"icons/128x128@2x.png",
+			"icons/icon.icns",
+			"icons/icon.ico"
+		],
+		"linux": {
+			"deb": { "depends": [] }
+		}
+	},
+	"plugins": {
+		"updater": {
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERFREM4ODBBMUY5QjA1MjcKUldRbkJac2ZDb2pjM2tiRDNiU3paWTB0RDVKcnA5b0FhVnVDclVWR1hXckdYV3VYNFpCOWxjTDkK",
+			"endpoints": [
+				"https://github.com/jarvis-server-manager/jarvis/releases/latest/download/latest.json"
+			]
+		}
+	}
+}

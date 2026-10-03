@@ -1,0 +1,10 @@
+[Unit]
+Description=Install test SSH keys for keyuser
+Before=ssh.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/install -o keyuser -g keyuser -m 600 /etc/jarvis-test/authorized_keys /home/keyuser/.ssh/authorized_keys
+
+[Install]
+WantedBy=multi-user.target

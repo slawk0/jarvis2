@@ -1,0 +1,56 @@
+[package]
+name = "jarvis-server-manager"
+version = "0.1.0"
+description = "Desktop GUI for administering Linux servers over SSH"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT"
+publish = false
+
+[lib]
+name = "jarvis_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-single-instance = "2"
+tauri-plugin-window-state = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+specta = { version = "=2.0.0-rc.25", features = ["derive"] }
+specta-typescript = "0.0.12"
+tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "net", "fs", "process"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+futures = "0.3"
+russh = { version = "0.63", default-features = false, features = ["ring", "rsa", "flate2"] }
+russh-sftp = "3"
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "tls-rustls-ring-webpki", "mysql", "postgres", "chrono", "uuid", "json", "bigdecimal"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "json", "query", "http2"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+keyring = "4"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+parking_lot = "0.12"
+dirs = "6"
+base64 = "0.22"
+regex = "1"
+log = "0.4"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+opt-level = "s"
+strip = true
