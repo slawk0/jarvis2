@@ -7,7 +7,7 @@ on:
 
 jobs:
   frontend:
-    runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -23,7 +23,7 @@ jobs:
       - run: pnpm test
 
   backend:
-    runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install build dependencies

@@ -18,10 +18,10 @@ jobs:
         include:
           - os: windows-latest
             bundles: nsis,msi
-          - os: self-hosted
+          - os: ubuntu-22.04
             bundles: deb,rpm,appimage
             linux_deps: true
-    runs-on: ${{ matrix.linux_deps && fromJSON('["self-hosted", "Linux"]') || matrix.os }}
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
