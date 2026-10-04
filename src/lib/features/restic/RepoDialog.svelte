@@ -91,14 +91,19 @@
 	let detecting = $state(false);
 	let saving = $state(false);
 
+	// The draft is built in a local first: reading `draft` here would make the effect depend on
+	// the state it writes and loop.
 	$effect(() => {
 		if (!repo) {
 			draft = null;
 			return;
 		}
-		draft = structuredClone($state.snapshot(repo));
+		const next = structuredClone($state.snapshot(repo));
+		// PathInput has a default value, and Svelte rejects binding `undefined` to such a prop.
+		next.fields.path ??= '';
+		draft = next;
 		password = accessKey = secretKey = '';
-		env = draft.envNames.map((name) => ({ name, value: '', stored: true }));
+		env = next.envNames.map((name) => ({ name, value: '', stored: true }));
 		remotes = null;
 	});
 

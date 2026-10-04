@@ -86,9 +86,11 @@
 			draft = null;
 			return;
 		}
-		draft = structuredClone($state.snapshot(template));
-		scheduled = draft.schedule.trim() !== '';
-		schedule = draft.schedule.trim() || '0 3 * * *';
+		// Read from a local: reading `draft` here would make the effect depend on what it writes.
+		const next = structuredClone($state.snapshot(template));
+		draft = next;
+		scheduled = next.schedule.trim() !== '';
+		schedule = next.schedule.trim() || '0 3 * * *';
 		dbPassword = s3AccessKey = s3SecretKey = sftpPassword = '';
 		touched = new Set();
 		apiQuiet.dockerContainers().then(
