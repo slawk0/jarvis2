@@ -176,15 +176,13 @@ describe('parseLayout', () => {
 	it('rejects malformed input', () => {
 		expect(parseLayout(null)).toBeNull();
 		expect(parseLayout({ kind: 'pane' })).toBeNull();
-		expect(parseLayout({ kind: 'split', id: 's', dir: 'row', ratio: 2, a: pane('a'), b: pane('b') })).toBeNull();
-		expect(parseLayout({ kind: 'split', id: 's', dir: 'row', ratio: 0.5, a: pane('a'), b: pane('a') })).toBeNull();
-		const five = splitPane(
-			buildPreset('grid', ['a', 'b', 'c', 'd'], newId),
-			'a',
-			'left',
-			'e',
-			'x'
-		);
+		expect(
+			parseLayout({ kind: 'split', id: 's', dir: 'row', ratio: 2, a: pane('a'), b: pane('b') })
+		).toBeNull();
+		expect(
+			parseLayout({ kind: 'split', id: 's', dir: 'row', ratio: 0.5, a: pane('a'), b: pane('a') })
+		).toBeNull();
+		const five = splitPane(buildPreset('grid', ['a', 'b', 'c', 'd'], newId), 'a', 'left', 'e', 'x');
 		expect(countPanes(five)).toBe(4);
 	});
 });

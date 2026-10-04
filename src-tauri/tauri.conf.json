@@ -59,9 +59,7 @@
 	"plugins": {
 		"updater": {
 			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERFREM4ODBBMUY5QjA1MjcKUldRbkJac2ZDb2pjM2tiRDNiU3paWTB0RDVKcnA5b0FhVnVDclVWR1hXckdYV3VYNFpCOWxjTDkK",
-			"endpoints": [
-				"https://github.com/jarvis-server-manager/jarvis/releases/latest/download/latest.json"
-			]
+			"endpoints": ["https://github.com/jarvis-server-manager/jarvis/releases/latest/download/latest.json"]
 		}
 	}
 }

@@ -33,10 +33,7 @@ pub struct Conn {
 
 impl Conn {
     fn new(handle: Handle) -> Arc<Self> {
-        Arc::new(Self {
-            handle,
-            slots: Arc::new(Semaphore::new(CHANNELS_PER_CONNECTION)),
-        })
+        Arc::new(Self { handle, slots: Arc::new(Semaphore::new(CHANNELS_PER_CONNECTION)) })
     }
 
     pub fn is_closed(&self) -> bool {
@@ -53,6 +50,13 @@ pub struct Lease {
     pub channel: Channel<Msg>,
     _permit: Option<OwnedSemaphorePermit>,
     pub conn: Arc<Conn>,
+}
+
+/// The shared SFTP subsystem plus what keeps its channel alive.
+struct SftpHandle {
+    client: Arc<russh_sftp::client::SftpSession>,
+    conn: Arc<Conn>,
+    _permit: Option<OwnedSemaphorePermit>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -162,12 +166,7 @@ pub struct Exec {
 
 impl Exec {
     pub fn new(script: impl Into<String>) -> Self {
-        Self {
-            script: script.into(),
-            sudo: false,
-            stdin: None,
-            timeout: DEFAULT_TIMEOUT,
-        }
+        Self { script: script.into(), sudo: false, stdin: None, timeout: DEFAULT_TIMEOUT }
     }
 
     pub fn sudo(mut self) -> Self {
@@ -207,15 +206,11 @@ pub struct Session {
     pub shutdown: CancellationToken,
     /// Lazily detected: does `docker` need sudo on this server?
     pub docker_sudo: tokio::sync::Mutex<Option<bool>>,
-    pub sftp: tokio::sync::Mutex<Option<Arc<russh_sftp::client::SftpSession>>>,
+    sftp: tokio::sync::Mutex<Option<SftpHandle>>,
 }
 
 impl Session {
-    pub async fn open(
-        profile: Profile,
-        target: Target,
-        known_hosts: Arc<KnownHosts>,
-    ) -> Result<Arc<Self>, ConnectFailure> {
+    pub async fn open(profile: Profile, target: Target, known_hosts: Arc<KnownHosts>) -> Result<Arc<Self>, ConnectFailure> {
         let handle = client::connect(&target, known_hosts.clone()).await?;
         let mut session = Self {
             profile,
@@ -234,21 +229,14 @@ impl Session {
     }
 
     async fn detect_facts(&self) -> AppResult<Facts> {
-        let out = self
-            .run("id -u; id -un; printf '%s\\n' \"$HOME\"; command -v sudo >/dev/null 2>&1 && echo yes || echo no")
-            .await?;
+        let out = self.run("id -u; id -un; printf '%s\\n' \"$HOME\"; command -v sudo >/dev/null 2>&1 && echo yes || echo no").await?;
         let mut lines = out.lines();
         let mut next = || lines.next().unwrap_or("").trim().to_string();
         let uid = next().parse().unwrap_or(u32::MAX);
         let user = next();
         let home = next();
         let has_sudo = next() == "yes";
-        Ok(Facts {
-            uid,
-            user,
-            home: if home.is_empty() { "/".into() } else { home },
-            has_sudo,
-        })
+        Ok(Facts { uid, user, home: if home.is_empty() { "/".into() } else { home }, has_sudo })
     }
 
     pub fn target(&self) -> &Target {
@@ -298,17 +286,11 @@ impl Session {
                     attempt += 1;
                     tokio::time::sleep(Duration::from_millis(100 * attempt)).await;
                 }
-                Err(e) if conn.is_closed() => {
-                    return Err(AppError::new(ErrorCode::ConnectionLost, e.to_string()))
-                }
+                Err(e) if conn.is_closed() => return Err(AppError::new(ErrorCode::ConnectionLost, e.to_string())),
                 Err(e) => return Err(e.into()),
             }
         };
-        Ok(Lease {
-            channel,
-            _permit: permit,
-            conn,
-        })
+        Ok(Lease { channel, _permit: permit, conn })
     }
 
     /// Channel on the main connection, for short request/response commands.
@@ -317,12 +299,7 @@ impl Session {
         if conn.is_closed() {
             return Err(AppError::code(ErrorCode::ConnectionLost));
         }
-        let permit = conn
-            .slots
-            .clone()
-            .acquire_owned()
-            .await
-            .map_err(|_| AppError::code(ErrorCode::ConnectionLost))?;
+        let permit = conn.slots.clone().acquire_owned().await.map_err(|_| AppError::code(ErrorCode::ConnectionLost))?;
         Self::open_channel(conn, Some(permit)).await
     }
 
@@ -332,23 +309,36 @@ impl Session {
         let existing = {
             let mut pool = self.streams.lock();
             pool.retain(|c| !c.is_closed());
-            pool.iter()
-                .find_map(|c| c.slots.clone().try_acquire_owned().ok().map(|p| (c.clone(), p)))
+            pool.iter().find_map(|c| c.slots.clone().try_acquire_owned().ok().map(|p| (c.clone(), p)))
         };
         let (conn, permit) = match existing {
             Some(found) => found,
             None => {
                 let conn = self.dedicated().await?;
-                let permit = conn
-                    .slots
-                    .clone()
-                    .try_acquire_owned()
-                    .map_err(|_| AppError::internal("fresh connection has no free slot"))?;
+                let permit = conn.slots.clone().try_acquire_owned().map_err(|_| AppError::internal("fresh connection has no free slot"))?;
                 self.streams.lock().push(conn.clone());
                 (conn, permit)
             }
         };
         Self::open_channel(conn, Some(permit)).await
+    }
+
+    /// The session's SFTP client, opened on first use on a side connection.
+    pub async fn sftp(&self) -> AppResult<Arc<russh_sftp::client::SftpSession>> {
+        let mut slot = self.sftp.lock().await;
+        if let Some(handle) = slot.as_ref() {
+            if !handle.conn.is_closed() {
+                return Ok(handle.client.clone());
+            }
+        }
+        let lease = self.lease_stream().await?;
+        lease.channel.request_subsystem(true, "sftp").await?;
+        let Lease { channel, _permit, conn } = lease;
+        let client = russh_sftp::client::SftpSession::new(channel.into_stream()).await?;
+        client.set_timeout(60);
+        let client = Arc::new(client);
+        *slot = Some(SftpHandle { client: client.clone(), conn, _permit });
+        Ok(client)
     }
 
     /// Open a `direct-tcpip` channel to `host:port` as seen from the server.
@@ -366,10 +356,7 @@ impl Session {
                 c
             }
         };
-        Ok(conn
-            .handle
-            .channel_open_direct_tcpip(host, u32::from(port), "127.0.0.1", 0)
-            .await?)
+        Ok(conn.handle.channel_open_direct_tcpip(host, u32::from(port), "127.0.0.1", 0).await?)
     }
 
     /// Wrap a script for the remote login shell: fixed locale, POSIX `sh`.
@@ -379,12 +366,7 @@ impl Session {
 
     /// Final command line and stdin for a script, applying elevation.
     /// The sudo password only ever travels through the channel's stdin.
-    pub async fn command_line(
-        &self,
-        script: &str,
-        sudo: bool,
-        stdin: Option<Vec<u8>>,
-    ) -> AppResult<(String, Option<Vec<u8>>)> {
+    pub async fn command_line(&self, script: &str, sudo: bool, stdin: Option<Vec<u8>>) -> AppResult<(String, Option<Vec<u8>>)> {
         let line = Self::user_line(script);
         if !sudo {
             return Ok((line, stdin));
@@ -396,21 +378,13 @@ impl Session {
                 let mut input = password.into_bytes();
                 input.push(b'\n');
                 input.extend(stdin.unwrap_or_default());
-                Ok((
-                    format!("sudo -k -S -p {} -- {line}", q(SUDO_PROMPT)),
-                    Some(input),
-                ))
+                Ok((format!("sudo -k -S -p {} -- {line}", q(SUDO_PROMPT)), Some(input)))
             }
         }
     }
 
     /// Run an exact command line on the main connection and collect its output.
-    pub async fn exec_line(
-        &self,
-        line: &str,
-        stdin: Option<&[u8]>,
-        timeout: Duration,
-    ) -> AppResult<Output> {
+    pub async fn exec_line(&self, line: &str, stdin: Option<&[u8]>, timeout: Duration) -> AppResult<Output> {
         let mut lease = self.lease().await?;
         let run = collect(&mut lease.channel, line, stdin);
         tokio::select! {
@@ -429,9 +403,7 @@ impl Session {
     }
 
     pub async fn exec(&self, exec: Exec) -> AppResult<Output> {
-        let (line, stdin) = self
-            .command_line(&exec.script, exec.sudo, exec.stdin)
-            .await?;
+        let (line, stdin) = self.command_line(&exec.script, exec.sudo, exec.stdin).await?;
         let mut output = self.exec_line(&line, stdin.as_deref(), exec.timeout).await?;
         if exec.sudo {
             let (stderr, tokens) = strip_tokens(&output.stderr);
@@ -456,9 +428,7 @@ impl Session {
     }
 
     pub async fn run_as(&self, script: impl Into<String>, sudo: bool) -> AppResult<String> {
-        self.exec(Exec::new(script).sudo_if(sudo))
-            .await?
-            .into_stdout()
+        self.exec(Exec::new(script).sudo_if(sudo)).await?.into_stdout()
     }
 
     /// Try as the login user and transparently retry as root when the
@@ -480,9 +450,7 @@ impl Session {
 
     /// True when the remote command exists in `PATH`.
     pub async fn has_command(&self, name: &'static str) -> AppResult<bool> {
-        let out = self
-            .exec(Exec::new(format!("command -v {name} >/dev/null 2>&1")))
-            .await?;
+        let out = self.exec(Exec::new(format!("command -v {name} >/dev/null 2>&1"))).await?;
         Ok(out.success())
     }
 
@@ -490,10 +458,7 @@ impl Session {
         self.shutdown.cancel();
         let streams: Vec<_> = std::mem::take(&mut *self.streams.lock());
         for conn in streams.into_iter().chain(std::iter::once(self.main())) {
-            let _ = conn
-                .handle
-                .disconnect(russh::Disconnect::ByApplication, "", "en")
-                .await;
+            let _ = conn.handle.disconnect(russh::Disconnect::ByApplication, "", "en").await;
         }
     }
 }
@@ -527,16 +492,9 @@ async fn collect(channel: &mut Channel<Msg>, line: &str, stdin: Option<&[u8]>) -
         }
     }
     let Some(code) = code else {
-        return Err(AppError::new(
-            ErrorCode::ConnectionLost,
-            "channel closed before the command finished",
-        ));
+        return Err(AppError::new(ErrorCode::ConnectionLost, "channel closed before the command finished"));
     };
-    Ok(Output {
-        stdout: String::from_utf8_lossy(&stdout).into_owned(),
-        stderr: String::from_utf8_lossy(&stderr).into_owned(),
-        code,
-    })
+    Ok(Output { stdout: String::from_utf8_lossy(&stdout).into_owned(), stderr: String::from_utf8_lossy(&stderr).into_owned(), code })
 }
 
 #[cfg(test)]
@@ -553,38 +511,16 @@ mod tests {
 
     #[test]
     fn output_error_mapping() {
-        let ok = Output {
-            stdout: "x".into(),
-            stderr: String::new(),
-            code: 0,
-        };
+        let ok = Output { stdout: "x".into(), stderr: String::new(), code: 0 };
         assert_eq!(ok.into_stdout().unwrap(), "x");
 
-        let denied = Output {
-            stdout: String::new(),
-            stderr: "cat: /etc/shadow: Permission denied".into(),
-            code: 1,
-        };
-        assert_eq!(
-            denied.into_stdout().unwrap_err().code,
-            ErrorCode::PermissionDenied
-        );
+        let denied = Output { stdout: String::new(), stderr: "cat: /etc/shadow: Permission denied".into(), code: 1 };
+        assert_eq!(denied.into_stdout().unwrap_err().code, ErrorCode::PermissionDenied);
 
-        let missing = Output {
-            stdout: String::new(),
-            stderr: "sh: 1: restic: not found".into(),
-            code: 127,
-        };
-        assert_eq!(
-            missing.into_stdout().unwrap_err().code,
-            ErrorCode::DependencyMissing
-        );
+        let missing = Output { stdout: String::new(), stderr: "sh: 1: restic: not found".into(), code: 127 };
+        assert_eq!(missing.into_stdout().unwrap_err().code, ErrorCode::DependencyMissing);
 
-        let failed = Output {
-            stdout: "partial".into(),
-            stderr: String::new(),
-            code: 2,
-        };
+        let failed = Output { stdout: "partial".into(), stderr: String::new(), code: 2 };
         let err = failed.into_stdout().unwrap_err();
         assert_eq!(err.code, ErrorCode::CommandFailed);
         assert_eq!(err.details.as_deref(), Some("partial"));

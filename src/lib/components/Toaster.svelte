@@ -18,12 +18,14 @@
 	};
 </script>
 
-<div class="pointer-events-none fixed right-4 bottom-4 z-[100] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2">
+<div
+	class="pointer-events-none fixed right-4 bottom-4 z-[100] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2"
+>
 	{#each toast.items as item (item.id)}
 		{@const Icon = ICONS[item.kind]}
 		<div
 			role={item.kind === 'error' ? 'alert' : 'status'}
-			class="bg-popover text-popover-foreground pointer-events-auto flex items-start gap-2.5 rounded-lg border p-3 shadow-lg"
+			class="pointer-events-auto flex items-start gap-2.5 rounded-lg border bg-popover p-3 text-popover-foreground shadow-lg"
 			transition:fly={{ x: 24, duration: 160 }}
 			onpointerenter={() => toast.hold(item.id)}
 			onpointerleave={() => toast.release(item.id)}
@@ -32,14 +34,16 @@
 			<div class="selectable min-w-0 flex-1">
 				<p class="text-sm leading-snug font-medium break-words">{item.message}</p>
 				{#if item.detail}
-					<p class="text-muted-foreground mt-1 max-h-32 overflow-auto text-xs break-words whitespace-pre-wrap">
+					<p
+						class="mt-1 max-h-32 overflow-auto text-xs break-words whitespace-pre-wrap text-muted-foreground"
+					>
 						{item.detail}
 					</p>
 				{/if}
 			</div>
 			<button
 				type="button"
-				class="text-muted-foreground hover:text-foreground rounded p-0.5"
+				class="rounded p-0.5 text-muted-foreground hover:text-foreground"
 				aria-label="Copy message"
 				onclick={() => copyText(item.detail ? `${item.message}\n${item.detail}` : item.message)}
 			>
@@ -47,7 +51,7 @@
 			</button>
 			<button
 				type="button"
-				class="text-muted-foreground hover:text-foreground rounded p-0.5"
+				class="rounded p-0.5 text-muted-foreground hover:text-foreground"
 				aria-label="Dismiss"
 				onclick={() => toast.dismiss(item.id)}
 			>

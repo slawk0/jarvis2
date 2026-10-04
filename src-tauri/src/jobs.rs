@@ -67,20 +67,12 @@ pub struct JobMeta {
 impl JobMeta {
     /// A job listed in the Running Jobs panel.
     pub fn visible(title: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self {
-            title: title.into(),
-            detail: detail.into(),
-            visible: true,
-        }
+        Self { title: title.into(), detail: detail.into(), visible: true }
     }
 
     /// A stream only its own view cares about (log follow, live stats…).
     pub fn hidden(title: impl Into<String>) -> Self {
-        Self {
-            title: title.into(),
-            detail: String::new(),
-            visible: false,
-        }
+        Self { title: title.into(), detail: String::new(), visible: false }
     }
 }
 
@@ -99,12 +91,7 @@ impl JobCtx {
         if chunk.is_empty() {
             return;
         }
-        let _ = JobOutput {
-            job_id: self.id.clone(),
-            stream,
-            chunk,
-        }
-        .emit(&self.app);
+        let _ = JobOutput { job_id: self.id.clone(), stream, chunk }.emit(&self.app);
     }
 
     /// Write a line of the job's own commentary to the log.
@@ -128,11 +115,7 @@ impl JobCtx {
     }
 
     /// Like [`stream`](Self::stream), also handing every stdout chunk to `tap`.
-    pub async fn stream_with(
-        &self,
-        exec: Exec,
-        mut tap: impl FnMut(&str) + Send,
-    ) -> AppResult<i32> {
+    pub async fn stream_with(&self, exec: Exec, mut tap: impl FnMut(&str) + Send) -> AppResult<i32> {
         self.check_cancelled()?;
         let session = &self.session;
         // The inner shell reports its PID so a cancel can signal the process group.
@@ -201,22 +184,14 @@ impl JobCtx {
             session.sudo.invalidate();
             return Err(AppError::code(ErrorCode::SudoPasswordRequired));
         }
-        code.ok_or_else(|| {
-            AppError::new(
-                ErrorCode::ConnectionLost,
-                "channel closed before the command finished",
-            )
-        })
+        code.ok_or_else(|| AppError::new(ErrorCode::ConnectionLost, "channel closed before the command finished"))
     }
 
     /// Stream a command and fail the job if it exits non-zero.
     pub async fn step(&self, exec: Exec) -> AppResult<()> {
         match self.stream(exec).await? {
             0 => Ok(()),
-            code => Err(AppError::new(
-                ErrorCode::CommandFailed,
-                format!("exit code {code}"),
-            )),
+            code => Err(AppError::new(ErrorCode::CommandFailed, format!("exit code {code}"))),
         }
     }
 }
@@ -248,13 +223,7 @@ impl Jobs {
     }
 
     /// Run `body` as a job. The body returns the exit code to report.
-    pub fn spawn<F, Fut>(
-        &self,
-        app: &AppHandle,
-        session: Arc<Session>,
-        meta: JobMeta,
-        body: F,
-    ) -> String
+    pub fn spawn<F, Fut>(&self, app: &AppHandle, session: Arc<Session>, meta: JobMeta, body: F) -> String
     where
         F: FnOnce(JobCtx) -> Fut + Send + 'static,
         Fut: Future<Output = AppResult<i32>> + Send + 'static,
@@ -262,12 +231,7 @@ impl Jobs {
         let id = uuid::Uuid::new_v4().to_string();
         let cancel = CancellationToken::new();
         self.running.lock().insert(id.clone(), cancel.clone());
-        let ctx = JobCtx {
-            id: id.clone(),
-            app: app.clone(),
-            cancel,
-            session,
-        };
+        let ctx = JobCtx { id: id.clone(), app: app.clone(), cancel, session };
         let _ = JobStarted {
             job_id: id.clone(),
             title: meta.title,
@@ -282,18 +246,8 @@ impl Jobs {
             let result = body(ctx.clone()).await;
             running.lock().remove(&ctx.id);
             let done = match result {
-                Ok(code) => JobDone {
-                    job_id: ctx.id.clone(),
-                    exit_code: Some(code),
-                    error: None,
-                    cancelled: false,
-                },
-                Err(e) => JobDone {
-                    job_id: ctx.id.clone(),
-                    exit_code: None,
-                    cancelled: e.is(ErrorCode::Cancelled),
-                    error: Some(e),
-                },
+                Ok(code) => JobDone { job_id: ctx.id.clone(), exit_code: Some(code), error: None, cancelled: false },
+                Err(e) => JobDone { job_id: ctx.id.clone(), exit_code: None, cancelled: e.is(ErrorCode::Cancelled), error: Some(e) },
             };
             let _ = done.emit(&ctx.app);
         });
@@ -302,19 +256,11 @@ impl Jobs {
 
     /// Start a single streamed remote command as a job. Elevation problems
     /// surface here, before the job exists, so the sudo dialog can retry.
-    pub async fn start(
-        &self,
-        app: &AppHandle,
-        session: Arc<Session>,
-        meta: JobMeta,
-        exec: Exec,
-    ) -> AppResult<String> {
+    pub async fn start(&self, app: &AppHandle, session: Arc<Session>, meta: JobMeta, exec: Exec) -> AppResult<String> {
         if exec.sudo {
             session.sudo_plan().await?;
         }
-        Ok(self.spawn(app, session, meta, move |ctx| async move {
-            ctx.stream(exec).await
-        }))
+        Ok(self.spawn(app, session, meta, move |ctx| async move { ctx.stream(exec).await }))
     }
 
     pub fn cancel(&self, job_id: &str) {

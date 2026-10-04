@@ -30,7 +30,7 @@
 
 <div class="flex items-center gap-2">
 	{#if auto !== undefined}
-		<label class="text-muted-foreground flex items-center gap-1.5 text-xs">
+		<label class="flex items-center gap-1.5 text-xs text-muted-foreground">
 			<Switch size="sm" bind:checked={auto} />
 			Auto-refresh
 		</label>

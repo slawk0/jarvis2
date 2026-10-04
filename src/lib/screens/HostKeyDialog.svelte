@@ -28,22 +28,22 @@
 		<div class="flex flex-col gap-3 text-sm">
 			<div class="flex items-start gap-3">
 				{#if changed}
-					<ShieldAlert class="text-destructive mt-0.5 size-6 shrink-0" />
+					<ShieldAlert class="mt-0.5 size-6 shrink-0 text-destructive" />
 					<p>
 						<strong>{issue.host}:{issue.port}</strong> presented a different key than the one you trusted before.
-						This can mean the server was reinstalled — or that someone is intercepting the connection.
-						Only continue if you know why the key changed.
+						This can mean the server was reinstalled — or that someone is intercepting the connection. Only continue
+						if you know why the key changed.
 					</p>
 				{:else}
-					<ShieldQuestion class="text-primary mt-0.5 size-6 shrink-0" />
+					<ShieldQuestion class="mt-0.5 size-6 shrink-0 text-primary" />
 					<p>
-						This is the first connection to <strong>{issue.host}:{issue.port}</strong>. Check that the fingerprint
-						matches the server before trusting it.
+						This is the first connection to <strong>{issue.host}:{issue.port}</strong>. Check that the
+						fingerprint matches the server before trusting it.
 					</p>
 				{/if}
 			</div>
 
-			<dl class="bg-sunken selectable flex flex-col gap-2 rounded-md border p-3 text-xs">
+			<dl class="selectable flex flex-col gap-2 rounded-md border bg-sunken p-3 text-xs">
 				{#if changed}
 					<div>
 						<dt class="text-muted-foreground">Previously trusted</dt>
@@ -53,7 +53,9 @@
 					</div>
 				{/if}
 				<div>
-					<dt class="text-muted-foreground">{changed ? 'New fingerprint' : 'Fingerprint'} ({issue.keyType})</dt>
+					<dt class="text-muted-foreground">
+						{changed ? 'New fingerprint' : 'Fingerprint'} ({issue.keyType})
+					</dt>
 					<dd class="font-mono break-all">{issue.fingerprint}</dd>
 				</div>
 			</dl>

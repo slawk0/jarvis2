@@ -8,9 +8,7 @@ use crate::error::{AppError, AppResult};
 
 /// POSIX single-quote a string so the shell sees it as exactly one word.
 pub fn q(s: &str) -> String {
-    let safe = !s.is_empty()
-        && s.bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b"_@%+=:,./-".contains(&b));
+    let safe = !s.is_empty() && s.bytes().all(|b| b.is_ascii_alphanumeric() || b"_@%+=:,./-".contains(&b));
     if safe {
         return s.to_string();
     }
@@ -38,9 +36,7 @@ pub struct Cmd {
 
 impl Cmd {
     pub fn new(program: &'static str) -> Self {
-        Self {
-            parts: vec![program.to_string()],
-        }
+        Self { parts: vec![program.to_string()] }
     }
 
     /// Start from a dynamic prefix made of already-validated words
@@ -50,9 +46,7 @@ impl Cmd {
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        Self {
-            parts: words.into_iter().map(|w| q(w.as_ref())).collect(),
-        }
+        Self { parts: words.into_iter().map(|w| q(w.as_ref())).collect() }
     }
 
     pub fn arg(mut self, value: impl AsRef<str>) -> Self {
@@ -65,8 +59,7 @@ impl Cmd {
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        self.parts
-            .extend(values.into_iter().map(|v| q(v.as_ref())));
+        self.parts.extend(values.into_iter().map(|v| q(v.as_ref())));
         self
     }
 
@@ -138,9 +131,7 @@ pub mod validate {
 
     /// Generic identifier: container, image, unit, package, network names.
     pub fn name<'a>(what: &str, value: &'a str) -> AppResult<&'a str> {
-        if all(value, 255, |b| {
-            b.is_ascii_alphanumeric() || b"_.@:/+-".contains(&b)
-        }) {
+        if all(value, 255, |b| b.is_ascii_alphanumeric() || b"_.@:/+-".contains(&b)) {
             Ok(value)
         } else {
             fail(what, value)
@@ -149,11 +140,7 @@ pub mod validate {
 
     /// Stricter identifier without path separators (file-name safe).
     pub fn slug<'a>(what: &str, value: &'a str) -> AppResult<&'a str> {
-        if all(value, 128, |b| {
-            b.is_ascii_alphanumeric() || b"_.@-".contains(&b)
-        }) && value != "."
-            && value != ".."
-        {
+        if all(value, 128, |b| b.is_ascii_alphanumeric() || b"_.@-".contains(&b)) && value != "." && value != ".." {
             Ok(value)
         } else {
             fail(what, value)
@@ -161,9 +148,7 @@ pub mod validate {
     }
 
     pub fn unit(value: &str) -> AppResult<&str> {
-        if all(value, 255, |b| {
-            b.is_ascii_alphanumeric() || b"_.@:\\-".contains(&b)
-        }) {
+        if all(value, 255, |b| b.is_ascii_alphanumeric() || b"_.@:\\-".contains(&b)) {
             Ok(value)
         } else {
             fail("unit name", value)
@@ -172,16 +157,11 @@ pub mod validate {
 
     pub fn username(value: &str) -> AppResult<&str> {
         let bytes = value.as_bytes();
-        let first_ok = bytes
-            .first()
-            .is_some_and(|b| b.is_ascii_lowercase() || *b == b'_');
-        let rest_ok = bytes.iter().enumerate().all(|(i, b)| {
-            b.is_ascii_lowercase()
-                || b.is_ascii_digit()
-                || *b == b'_'
-                || *b == b'-'
-                || (*b == b'$' && i == bytes.len() - 1)
-        });
+        let first_ok = bytes.first().is_some_and(|b| b.is_ascii_lowercase() || *b == b'_');
+        let rest_ok = bytes
+            .iter()
+            .enumerate()
+            .all(|(i, b)| b.is_ascii_lowercase() || b.is_ascii_digit() || *b == b'_' || *b == b'-' || (*b == b'$' && i == bytes.len() - 1));
         if first_ok && rest_ok && value.len() <= 32 {
             Ok(value)
         } else {
@@ -190,10 +170,7 @@ pub mod validate {
     }
 
     pub fn abs_path(value: &str) -> AppResult<&str> {
-        if value.starts_with('/')
-            && value.len() <= 4096
-            && !value.bytes().any(|b| b == 0 || b == b'\n' || b == b'\r')
-        {
+        if value.starts_with('/') && value.len() <= 4096 && !value.bytes().any(|b| b == 0 || b == b'\n' || b == b'\r') {
             Ok(value)
         } else {
             fail("absolute path", value)
@@ -218,9 +195,7 @@ pub mod validate {
         let mut bytes = value.bytes();
         let first = bytes.next();
         if first.is_some_and(|b| b.is_ascii_alphabetic() || b == b'_')
-            && value
-                .bytes()
-                .all(|b| b.is_ascii_alphanumeric() || b == b'_')
+            && value.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
             && value.len() <= 128
         {
             Ok(value)
@@ -273,9 +248,7 @@ pub mod validate {
                 && label.len() <= 63
                 && !label.starts_with('-')
                 && !label.ends_with('-')
-                && label
-                    .bytes()
-                    .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+                && label.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
         });
         if labels_ok && value.len() <= 253 {
             Ok(value)
@@ -294,10 +267,7 @@ pub mod validate {
     /// `80`, `8000:8100` or `8000-8100` (normalised to the given separator).
     pub fn port_or_range(value: &str, sep: char) -> AppResult<String> {
         let parts: Vec<&str> = value.split([':', '-']).collect();
-        let parsed: Option<Vec<u16>> = parts
-            .iter()
-            .map(|p| p.trim().parse::<u16>().ok().filter(|n| *n > 0))
-            .collect();
+        let parsed: Option<Vec<u16>> = parts.iter().map(|p| p.trim().parse::<u16>().ok().filter(|n| *n > 0)).collect();
         match parsed.as_deref() {
             Some([a]) => Ok(a.to_string()),
             Some([a, b]) if a <= b => Ok(format!("{a}{sep}{b}")),
@@ -308,9 +278,7 @@ pub mod validate {
     pub fn email(value: &str) -> AppResult<&str> {
         let ok = value.split_once('@').is_some_and(|(local, domain)| {
             !local.is_empty()
-                && local
-                    .bytes()
-                    .all(|b| b.is_ascii_alphanumeric() || b"._%+-".contains(&b))
+                && local.bytes().all(|b| b.is_ascii_alphanumeric() || b"._%+-".contains(&b))
                 && host(domain).is_ok()
                 && domain.contains('.')
         });
@@ -324,23 +292,34 @@ pub mod validate {
     /// Five-field cron expression or an `@keyword`.
     pub fn cron_expr(value: &str) -> AppResult<&str> {
         let v = value.trim();
-        const KEYWORDS: [&str; 8] = [
-            "@reboot",
-            "@yearly",
-            "@annually",
-            "@monthly",
-            "@weekly",
-            "@daily",
-            "@midnight",
-            "@hourly",
-        ];
+        const KEYWORDS: [&str; 8] = ["@reboot", "@yearly", "@annually", "@monthly", "@weekly", "@daily", "@midnight", "@hourly"];
         if KEYWORDS.contains(&v) {
             return Ok(value);
         }
         let fields: Vec<&str> = v.split_whitespace().collect();
+        const NAMES: [&str; 19] = [
+            "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec", "sun", "mon", "tue", "wed", "thu", "fri",
+            "sat",
+        ];
+        // One value: a number or a month/weekday name.
+        let value_ok = |v: &str| {
+            (!v.is_empty() && v.len() <= 4 && v.bytes().all(|b| b.is_ascii_digit())) || NAMES.contains(&v.to_ascii_lowercase().as_str())
+        };
+        // A list of `*`, `value`, `a-b`, each optionally with `/step`.
         let field_ok = |f: &&str| {
-            f.bytes()
-                .all(|b| b.is_ascii_alphanumeric() || b"*/,-".contains(&b))
+            f.split(',').all(|part| {
+                let (range, step) = match part.split_once('/') {
+                    Some((r, s)) => (r, Some(s)),
+                    None => (part, None),
+                };
+                let step_ok = step.is_none_or(|s| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()));
+                let range_ok = range == "*"
+                    || match range.split_once('-') {
+                        Some((a, b)) => value_ok(a) && value_ok(b),
+                        None => value_ok(range),
+                    };
+                step_ok && range_ok
+            })
         };
         if fields.len() == 5 && fields.iter().all(field_ok) {
             Ok(value)
@@ -385,10 +364,7 @@ mod tests {
             .opt("--since", "1 h")
             .opt_eq("--format", "{{json .}}")
             .lit("2>&1");
-        assert_eq!(
-            c.build(),
-            "docker logs --tail 100 'my app; rm -rf /' --since '1 h' --format='{{json .}}' 2>&1"
-        );
+        assert_eq!(c.build(), "docker logs --tail 100 'my app; rm -rf /' --since '1 h' --format='{{json .}}' 2>&1");
     }
 
     #[test]

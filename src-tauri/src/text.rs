@@ -154,10 +154,7 @@ pub fn looks_binary(bytes: &[u8]) -> bool {
     if sample.contains(&0) {
         return true;
     }
-    let control = sample
-        .iter()
-        .filter(|b| **b < 0x20 && !matches!(**b, b'\n' | b'\r' | b'\t' | 0x0c | 0x1b))
-        .count();
+    let control = sample.iter().filter(|b| **b < 0x20 && !matches!(**b, b'\n' | b'\r' | b'\t' | 0x0c | 0x1b)).count();
     !sample.is_empty() && control * 10 > sample.len()
 }
 

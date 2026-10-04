@@ -81,11 +81,13 @@
 {:else if !report}
 	<StateView kind="loading" title="Checking requirements…" compact={inline} />
 {:else}
-	<div class={inline ? 'flex flex-col gap-3' : 'mx-auto flex h-full max-w-2xl flex-col justify-center gap-3 p-6'}>
+	<div
+		class={inline ? 'flex flex-col gap-3' : 'mx-auto flex h-full max-w-2xl flex-col justify-center gap-3 p-6'}
+	>
 		{#if !inline}
 			<div>
 				<h2 class="text-base font-semibold">Missing requirements</h2>
-				<p class="text-muted-foreground text-sm">
+				<p class="text-sm text-muted-foreground">
 					This feature needs the following on the server.
 					{#if !report.packageManager}
 						No supported package manager was detected, so automatic installation may not be available.
@@ -94,11 +96,11 @@
 			</div>
 		{/if}
 		{#each missing as tool (tool.tool)}
-			<div class="bg-card flex flex-col gap-2 rounded-lg border p-3">
+			<div class="flex flex-col gap-2 rounded-lg border bg-card p-3">
 				<div class="flex items-center gap-2">
-					<PackageIcon class="text-muted-foreground size-4" />
+					<PackageIcon class="size-4 text-muted-foreground" />
 					<span class="text-sm font-medium">{tool.label}</span>
-					<span class="text-muted-foreground text-xs">not installed</span>
+					<span class="text-xs text-muted-foreground">not installed</span>
 					<div class="ml-auto flex items-center gap-1.5">
 						<Button variant="ghost" size="sm" onclick={() => openUrl(tool.docsUrl)}>
 							<ExternalLink /> Docs
@@ -111,17 +113,17 @@
 					</div>
 				</div>
 				{#if !tool.installable}
-					<p class="text-muted-foreground text-xs">
+					<p class="text-xs text-muted-foreground">
 						{tool.label} cannot be installed by Jarvis; this server does not provide it.
 					</p>
 				{:else if tool.manualCommand}
-					<div class="bg-sunken flex items-start gap-2 rounded-md border px-2 py-1.5">
-						<code class="selectable text-muted-foreground min-w-0 flex-1 text-[11px] break-all">
+					<div class="flex items-start gap-2 rounded-md border bg-sunken px-2 py-1.5">
+						<code class="selectable min-w-0 flex-1 text-[11px] break-all text-muted-foreground">
 							{tool.manualCommand}
 						</code>
 						<button
 							type="button"
-							class="text-muted-foreground hover:text-foreground shrink-0"
+							class="shrink-0 text-muted-foreground hover:text-foreground"
 							aria-label="Copy command"
 							onclick={() => copyText(tool.manualCommand ?? '').then(() => toast.success('Command copied'))}
 						>
@@ -129,7 +131,7 @@
 						</button>
 					</div>
 				{:else}
-					<p class="text-muted-foreground text-xs">
+					<p class="text-xs text-muted-foreground">
 						No package manager was detected. Install it manually, then re-check.
 					</p>
 				{/if}

@@ -17,9 +17,15 @@ importers:
       '@lucide/svelte':
         specifier: ^1.50.0
         version: 1.50.0(svelte@5.57.1(@typescript-eslint/types@8.71.0))
+      '@svg-maps/world':
+        specifier: ^2.0.0
+        version: 2.0.0
       '@tauri-apps/api':
         specifier: ^2.12.1
         version: 2.12.1
+      '@tauri-apps/plugin-clipboard-manager':
+        specifier: ^2.4.1
+        version: 2.4.1
       '@tauri-apps/plugin-dialog':
         specifier: ^2.8.1
         version: 2.8.1
@@ -396,6 +402,9 @@ packages:
       svelte: ^5.46.4
       vite: ^8.0.0-beta.7 || ^8.0.0
 
+  '@svg-maps/world@2.0.0':
+    resolution: {integrity: sha512-VmYYnyygJ5Zhr48xPqukFBoq4aCBgVNIjBzqBnWKXSdHhrRK3pntdvbCa8lMsxwVCFzEw9a+smIMEGI2sC1xcQ==}
+
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
 
@@ -571,6 +580,9 @@ packages:
     resolution: {integrity: sha512-kEDEiGzG+yAc5FeLxtXpES/VN+F2C8H0r4gDVtfRLKxT9np9101d9REG/Kgo2lr0hKi0IpDsODiHnU3+naOmLg==}
     engines: {node: '>= 10'}
     hasBin: true
+
+  '@tauri-apps/plugin-clipboard-manager@2.4.1':
+    resolution: {integrity: sha512-5Q9hWWnsE7UF1xABWHpRwqGiyORrP9o/rJift/7V8woP/kSVF21W+bP9G7ch8Qd7pneDWUMk6hkfpLpjcC/4Ag==}
 
   '@tauri-apps/plugin-dialog@2.8.1':
     resolution: {integrity: sha512-/DtE3B62JgpYuWFL5ATXM6KOXUq7pca7cJWOgSqULhZsgyjLk0PWKek1dbRDvhNBW6flNsOfWphsKnb+738Dmw==}
@@ -1821,6 +1833,8 @@ snapshots:
       vite: 8.3.2(@types/node@26.6.4)(jiti@2.7.0)(yaml@2.9.1)
       vitefu: 1.1.3(vite@8.3.2(@types/node@26.6.4)(jiti@2.7.0)(yaml@2.9.1))
 
+  '@svg-maps/world@2.0.0': {}
+
   '@swc/helpers@0.5.23':
     dependencies:
       tslib: 2.8.1
@@ -1941,6 +1955,10 @@ snapshots:
       '@tauri-apps/cli-win32-arm64-msvc': 2.12.1
       '@tauri-apps/cli-win32-ia32-msvc': 2.12.1
       '@tauri-apps/cli-win32-x64-msvc': 2.12.1
+
+  '@tauri-apps/plugin-clipboard-manager@2.4.1':
+    dependencies:
+      '@tauri-apps/api': 2.12.1
 
   '@tauri-apps/plugin-dialog@2.8.1':
     dependencies:

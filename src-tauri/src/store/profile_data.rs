@@ -61,10 +61,7 @@ pub struct ProfileData {
 
 impl ProfileData {
     pub fn new(paths: Paths) -> Self {
-        Self {
-            paths,
-            lock: Mutex::new(()),
-        }
+        Self { paths, lock: Mutex::new(()) }
     }
 
     fn file(&self, profile_id: &str, key: DataKey) -> AppResult<PathBuf> {
@@ -78,32 +75,18 @@ impl ProfileData {
         load_json::<Value>(&self.file(profile_id, key)?)
     }
 
-    pub fn get_as<T: DeserializeOwned + Default>(
-        &self,
-        profile_id: &str,
-        key: DataKey,
-    ) -> AppResult<T> {
+    pub fn get_as<T: DeserializeOwned + Default>(&self, profile_id: &str, key: DataKey) -> AppResult<T> {
         let _guard = self.lock.lock();
         load_json::<T>(&self.file(profile_id, key)?)
     }
 
-    pub fn set<T: Serialize + ?Sized>(
-        &self,
-        profile_id: &str,
-        key: DataKey,
-        value: &T,
-    ) -> AppResult<()> {
+    pub fn set<T: Serialize + ?Sized>(&self, profile_id: &str, key: DataKey, value: &T) -> AppResult<()> {
         let _guard = self.lock.lock();
         save_json(&self.file(profile_id, key)?, value)
     }
 
     /// Read-modify-write under the store lock.
-    pub fn update<T, R>(
-        &self,
-        profile_id: &str,
-        key: DataKey,
-        edit: impl FnOnce(&mut T) -> R,
-    ) -> AppResult<R>
+    pub fn update<T, R>(&self, profile_id: &str, key: DataKey, edit: impl FnOnce(&mut T) -> R) -> AppResult<R>
     where
         T: DeserializeOwned + Default + Serialize,
     {
@@ -142,12 +125,8 @@ mod tests {
     fn unset_is_null_and_values_round_trip() {
         let (_dir, d) = data();
         assert_eq!(d.get("p1", DataKey::Runbooks).unwrap(), Value::Null);
-        d.set("p1", DataKey::Runbooks, &json!([{"name": "x"}]))
-            .unwrap();
-        assert_eq!(
-            d.get("p1", DataKey::Runbooks).unwrap(),
-            json!([{"name": "x"}])
-        );
+        d.set("p1", DataKey::Runbooks, &json!([{"name": "x"}])).unwrap();
+        assert_eq!(d.get("p1", DataKey::Runbooks).unwrap(), json!([{"name": "x"}]));
         assert_eq!(d.get("p2", DataKey::Runbooks).unwrap(), Value::Null);
         assert_eq!(d.get("p1", DataKey::SavedCommands).unwrap(), Value::Null);
     }
@@ -155,14 +134,8 @@ mod tests {
     #[test]
     fn update_and_typed_read() {
         let (_dir, d) = data();
-        d.update("p1", DataKey::ComposeStacks, |v: &mut Vec<String>| {
-            v.push("/srv/a".into())
-        })
-        .unwrap();
-        d.update("p1", DataKey::ComposeStacks, |v: &mut Vec<String>| {
-            v.push("/srv/b".into())
-        })
-        .unwrap();
+        d.update("p1", DataKey::ComposeStacks, |v: &mut Vec<String>| v.push("/srv/a".into())).unwrap();
+        d.update("p1", DataKey::ComposeStacks, |v: &mut Vec<String>| v.push("/srv/b".into())).unwrap();
         let v: Vec<String> = d.get_as("p1", DataKey::ComposeStacks).unwrap();
         assert_eq!(v, vec!["/srv/a", "/srv/b"]);
     }

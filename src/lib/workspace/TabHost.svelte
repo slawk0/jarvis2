@@ -39,7 +39,13 @@
 	});
 </script>
 
-<div class="absolute inset-0" class:hidden={!visible} role="tabpanel" aria-label={def.label} aria-hidden={!visible}>
+<div
+	class="absolute inset-0"
+	class:hidden={!visible}
+	role="tabpanel"
+	aria-label={def.label}
+	aria-hidden={!visible}
+>
 	{#if loadError}
 		<StateView kind="error" error={toIpcError(loadError)} onretry={load} />
 	{:else if Feature && app.profile}

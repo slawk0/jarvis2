@@ -28,7 +28,7 @@
 			{#if title}
 				<div class="mr-auto min-w-0">
 					<h2 class="truncate text-[15px] leading-tight font-semibold">{title}</h2>
-					{#if subtitle}<p class="text-muted-foreground truncate text-xs">{subtitle}</p>{/if}
+					{#if subtitle}<p class="truncate text-xs text-muted-foreground">{subtitle}</p>{/if}
 				</div>
 			{/if}
 			{#if toolbar}
@@ -39,7 +39,9 @@
 	{#if header}
 		<div class="shrink-0 px-4">{@render header()}</div>
 	{/if}
-	<div class={cn('min-h-0 flex-1 p-4', scroll ? 'overflow-auto' : 'flex flex-col overflow-hidden', className)}>
+	<div
+		class={cn('min-h-0 flex-1 p-4', scroll ? 'overflow-auto' : 'flex flex-col overflow-hidden', className)}
+	>
 		{@render children()}
 	</div>
 </div>

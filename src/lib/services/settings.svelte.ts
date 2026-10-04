@@ -3,7 +3,7 @@ import { commands, type AppSettings } from '$lib/ipc/bindings';
 import { debounce } from '$lib/utils';
 import { toast } from './toast.svelte';
 
-const DEFAULTS: AppSettings = {
+export const DEFAULT_SETTINGS: AppSettings = {
 	theme: 'dark',
 	sidebarCollapsed: false,
 	favourites: [],
@@ -11,17 +11,27 @@ const DEFAULTS: AppSettings = {
 	terminal: {
 		fontFamily: 'JetBrains Mono Variable',
 		fontSize: 13,
+		lineHeight: 100,
+		letterSpacing: 0,
 		theme: 'jarvis',
+		cursorStyle: 'block',
+		cursorBlink: true,
+		scrollback: 10000,
+		scrollOnInput: true,
 		copyOnSelect: false,
-		rightClickPaste: false,
-		scrollback: 10000
+		rightClick: 'menu',
+		middleClickPaste: false,
+		ctrlCopyPaste: false,
+		confirmMultilinePaste: false,
+		bell: 'none',
+		wordSeparators: ' ()[]{}\',"`'
 	},
 	downloadDir: null,
-	pangolin: { apiUrl: 'https://api.pangolin.net', orgId: '' }
+	pangolin: { apiUrl: 'https://api.pangolin.net', basePath: '', orgId: '' }
 };
 
 class SettingsService {
-	value = $state<AppSettings>(structuredClone(DEFAULTS));
+	value = $state<AppSettings>(structuredClone(DEFAULT_SETTINGS));
 	loaded = $state(false);
 
 	#save = debounce(() => {

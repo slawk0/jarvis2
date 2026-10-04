@@ -15,6 +15,7 @@ import {
 import { IpcError, toIpcError } from '$lib/ipc/errors';
 import { sudo } from './sudo.svelte';
 import { toast } from './toast.svelte';
+import { transfers } from './transfers.svelte';
 
 export type LinkStatus = 'online' | 'offline' | 'reconnecting' | 'switching';
 
@@ -99,6 +100,7 @@ class AppService {
 			this.status = 'online';
 			this.rebooting = false;
 			this.sessionKey++;
+			void transfers.sync();
 			return true;
 		} catch (raw) {
 			// The previous session was torn down before connecting.
@@ -117,12 +119,7 @@ class AppService {
 		const { issue, profileId } = prompt;
 		this.hostKeyPrompt = null;
 		try {
-			await commands.knownHostTrust(
-				issue.host,
-				issue.port,
-				issue.key,
-				issue.knownFingerprints.length > 0
-			);
+			await commands.knownHostTrust(issue.host, issue.port, issue.key, issue.knownFingerprints.length > 0);
 			await this.connect(profileId);
 		} catch (raw) {
 			this.connectError = toIpcError(raw);

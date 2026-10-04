@@ -14,7 +14,7 @@ use super::{load_json, save_json, Paths};
 use crate::error::{AppError, AppResult, ErrorCode};
 
 const SERVICE: &str = "com.jarvis.servermanager";
-/// Keyring service used by Jarvis v1; read once to migrate profile secrets.
+/// Keyring service used by Jarvis v1; read to import profile secrets.
 const LEGACY_SERVICE: &str = "JarvisServerManager";
 /// Owner id for secrets that do not belong to a server profile.
 pub const GLOBAL: &str = "_global";
@@ -37,20 +37,12 @@ fn keyring_err(e: keyring::Error) -> AppError {
 
 impl Secrets {
     pub fn new(paths: Paths) -> Self {
-        Self {
-            paths,
-            backend: Backend::Os,
-            lock: Mutex::new(()),
-        }
+        Self { paths, backend: Backend::Os, lock: Mutex::new(()) }
     }
 
     #[cfg(test)]
     pub fn in_memory(paths: Paths) -> Self {
-        Self {
-            paths,
-            backend: Backend::Memory(Mutex::new(HashMap::new())),
-            lock: Mutex::new(()),
-        }
+        Self { paths, backend: Backend::Memory(Mutex::new(HashMap::new())), lock: Mutex::new(()) }
     }
 
     fn account(owner: &str, name: &str) -> String {
@@ -80,9 +72,7 @@ impl Secrets {
     pub fn set(&self, owner: &str, name: &str, value: &str) -> AppResult<()> {
         let account = Self::account(owner, name);
         match &self.backend {
-            Backend::Os => keyring::Entry::new(SERVICE, &account)
-                .and_then(|e| e.set_password(value))
-                .map_err(keyring_err)?,
+            Backend::Os => keyring::Entry::new(SERVICE, &account).and_then(|e| e.set_password(value)).map_err(keyring_err)?,
             Backend::Memory(map) => {
                 map.lock().insert(account, value.to_string());
             }
@@ -95,13 +85,11 @@ impl Secrets {
     pub fn get(&self, owner: &str, name: &str) -> AppResult<Option<String>> {
         let account = Self::account(owner, name);
         match &self.backend {
-            Backend::Os => {
-                match keyring::Entry::new(SERVICE, &account).and_then(|e| e.get_password()) {
-                    Ok(value) => Ok(Some(value)),
-                    Err(keyring::Error::NoEntry) => Ok(None),
-                    Err(e) => Err(keyring_err(e)),
-                }
-            }
+            Backend::Os => match keyring::Entry::new(SERVICE, &account).and_then(|e| e.get_password()) {
+                Ok(value) => Ok(Some(value)),
+                Err(keyring::Error::NoEntry) => Ok(None),
+                Err(e) => Err(keyring_err(e)),
+            },
             Backend::Memory(map) => Ok(map.lock().get(&account).cloned()),
         }
     }
@@ -125,12 +113,10 @@ impl Secrets {
     fn delete_entry(&self, owner: &str, name: &str) -> AppResult<()> {
         let account = Self::account(owner, name);
         match &self.backend {
-            Backend::Os => {
-                match keyring::Entry::new(SERVICE, &account).and_then(|e| e.delete_credential()) {
-                    Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-                    Err(e) => Err(keyring_err(e)),
-                }
-            }
+            Backend::Os => match keyring::Entry::new(SERVICE, &account).and_then(|e| e.delete_credential()) {
+                Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+                Err(e) => Err(keyring_err(e)),
+            },
             Backend::Memory(map) => {
                 map.lock().remove(&account);
                 Ok(())
@@ -152,8 +138,9 @@ impl Secrets {
         self.delete_prefixed(owner, "")
     }
 
-    /// Jarvis v1 stored `<id>_pass` / `<id>_passphrase`; move them over on first use.
-    pub fn migrate_legacy_profile(&self, profile_id: &str) {
+    /// Jarvis v1 stored `<id>_pass` / `<id>_passphrase`; copy them over on first
+    /// use. The v1 entries are left in place so a v1 install keeps working.
+    pub fn import_legacy_profile(&self, profile_id: &str) {
         if !matches!(self.backend, Backend::Os) {
             return;
         }
@@ -166,9 +153,7 @@ impl Secrets {
                 continue;
             };
             if let Ok(value) = entry.get_password() {
-                if self.set(profile_id, name, &value).is_ok() {
-                    let _ = entry.delete_credential();
-                }
+                let _ = self.set(profile_id, name, &value);
             }
         }
     }
@@ -189,10 +174,7 @@ mod tests {
         let (_dir, s) = secrets();
         assert_eq!(s.get("p1", "ssh/password").unwrap(), None);
         s.set("p1", "ssh/password", "hunter2").unwrap();
-        assert_eq!(
-            s.get("p1", "ssh/password").unwrap().as_deref(),
-            Some("hunter2")
-        );
+        assert_eq!(s.get("p1", "ssh/password").unwrap().as_deref(), Some("hunter2"));
         assert!(s.exists("p1", "ssh/password"));
         s.delete("p1", "ssh/password").unwrap();
         assert!(!s.exists("p1", "ssh/password"));

@@ -21,10 +21,7 @@ export default ts.config(
 				{ name: 'confirm', message: 'Use the confirm service.' },
 				{ name: 'prompt', message: 'Use the prompt service.' }
 			],
-			'@typescript-eslint/no-unused-vars': [
-				'error',
-				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
-			],
+			'@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
 			// The app is a single route; links are external and opened through the opener plugin.
 			'svelte/no-navigation-without-resolve': 'off',
 			// Sets and Maps here are replaced, never mutated in place, when they are state.

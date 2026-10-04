@@ -38,8 +38,8 @@
 			}}
 		>
 			{#if sudo.action}
-				<div class="bg-sunken flex items-center gap-2 rounded-md border px-2.5 py-2 text-xs">
-					<KeyRound class="text-primary size-3.5 shrink-0" />
+				<div class="flex items-center gap-2 rounded-md border bg-sunken px-2.5 py-2 text-xs">
+					<KeyRound class="size-3.5 shrink-0 text-primary" />
 					<span class="text-muted-foreground">Needed for:</span>
 					<span class="truncate font-medium">{sudo.action}</span>
 				</div>
@@ -54,11 +54,11 @@
 				aria-invalid={sudo.error ? 'true' : undefined}
 			/>
 			{#if sudo.lockedFor > 0}
-				<p class="text-destructive text-xs" role="alert">
+				<p class="text-xs text-destructive" role="alert">
 					Too many incorrect attempts. Locked for {sudo.lockedFor} s.
 				</p>
 			{:else if sudo.error}
-				<p class="text-destructive text-xs" role="alert">{sudo.error}</p>
+				<p class="text-xs text-destructive" role="alert">{sudo.error}</p>
 			{/if}
 		</form>
 		{#snippet footer()}

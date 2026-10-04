@@ -45,7 +45,7 @@
 		<WorkspaceBar />
 		{#if app.status === 'offline' || app.status === 'reconnecting'}
 			<div
-				class="bg-destructive/12 text-destructive flex shrink-0 items-center gap-2 border-b px-4 py-1.5 text-xs"
+				class="flex shrink-0 items-center gap-2 border-b bg-destructive/12 px-4 py-1.5 text-xs text-destructive"
 				role="status"
 			>
 				<WifiOff class="size-3.5" />
@@ -65,10 +65,12 @@
 				<PaneGrid />
 			{/if}
 			{#if app.rebooting}
-				<div class="bg-background/90 absolute inset-0 z-40 flex flex-col items-center justify-center gap-3 backdrop-blur-sm">
-					<Power class="text-warning size-10 animate-pulse" />
+				<div
+					class="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3 bg-background/90 backdrop-blur-sm"
+				>
+					<Power class="size-10 animate-pulse text-warning" />
 					<p class="text-base font-semibold">The server is rebooting</p>
-					<p class="text-muted-foreground text-sm">
+					<p class="text-sm text-muted-foreground">
 						Jarvis reconnects automatically once it is back
 						{#if app.reconnectAttempt > 0}(attempt {app.reconnectAttempt}){/if}.
 					</p>
@@ -86,7 +88,7 @@
 	<dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
 		{#each SHORTCUTS as shortcut (shortcut.keys)}
 			<dt>
-				<kbd class="bg-muted rounded border px-1.5 py-0.5 text-xs whitespace-nowrap">{shortcut.keys}</kbd>
+				<kbd class="rounded border bg-muted px-1.5 py-0.5 text-xs whitespace-nowrap">{shortcut.keys}</kbd>
 			</dt>
 			<dd class="text-muted-foreground">{shortcut.description}</dd>
 		{/each}

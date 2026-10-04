@@ -97,7 +97,7 @@
 							'group relative flex h-7.5 w-full items-center gap-2.5 rounded-md text-sm transition-colors',
 							collapsed ? 'justify-center px-0' : 'px-2.5',
 							activeTab === t.id
-								? 'bg-primary/12 text-foreground font-medium'
+								? 'bg-primary/12 font-medium text-foreground'
 								: 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
 						)}
 						aria-current={activeTab === t.id ? 'page' : undefined}
@@ -105,7 +105,8 @@
 						onclick={() => workspace.openTab(t.id)}
 					>
 						{#if color}
-							<span class={cn('absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-full', TAG_BG[color])}></span>
+							<span class={cn('absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-full', TAG_BG[color])}
+							></span>
 						{/if}
 						<t.icon class={cn('size-4 shrink-0', activeTab === t.id && 'text-primary')} />
 						{#if !collapsed}<span class="truncate">{t.label}</span>{/if}
@@ -143,11 +144,15 @@
 
 <aside
 	class={cn(
-		'bg-sidebar flex h-full shrink-0 flex-col border-r transition-[width] duration-150',
+		'flex h-full shrink-0 flex-col border-r bg-sidebar transition-[width] duration-150',
 		collapsed ? 'w-14' : 'w-60'
 	)}
 >
-	<Tip text={collapsed ? 'Expand sidebar (Ctrl+Alt+B)' : 'Collapse sidebar (Ctrl+Alt+B)'} side="right" class="block">
+	<Tip
+		text={collapsed ? 'Expand sidebar (Ctrl+Alt+B)' : 'Collapse sidebar (Ctrl+Alt+B)'}
+		side="right"
+		class="block"
+	>
 		<button
 			type="button"
 			class={cn('flex h-12 w-full shrink-0 items-center gap-2.5', collapsed ? 'justify-center' : 'px-3.5')}
@@ -156,7 +161,7 @@
 			<img src="/logo.svg" alt="" class="size-7" />
 			{#if !collapsed}
 				<span class="text-[15px] font-semibold tracking-tight">Jarvis</span>
-				<span class="text-muted-foreground text-xs">Server Manager</span>
+				<span class="text-xs text-muted-foreground">Server Manager</span>
 			{/if}
 		</button>
 	</Tip>
@@ -170,16 +175,18 @@
 	<nav class={cn('min-h-0 flex-1 overflow-y-auto pb-2', collapsed ? 'px-2' : 'px-2.5')} aria-label="Tabs">
 		{#if favourites.length > 0}
 			{#if !collapsed}
-				<h3 class="text-muted-foreground px-2.5 pt-1 pb-1 text-[11px] font-medium tracking-wide uppercase">Favourites</h3>
+				<h3 class="px-2.5 pt-1 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+					Favourites
+				</h3>
 			{/if}
 			<div class="flex flex-col gap-px">
 				{#each favourites as t (t.id)}{@render tabButton(t)}{/each}
 			</div>
-			{#if collapsed}<div class="bg-border mx-1 my-2 h-px"></div>{/if}
+			{#if collapsed}<div class="mx-1 my-2 h-px bg-border"></div>{/if}
 		{/if}
 		{#each groups as group (group.category)}
 			{#if !collapsed}
-				<h3 class="text-muted-foreground px-2.5 pt-3 pb-1 text-[11px] font-medium tracking-wide uppercase">
+				<h3 class="px-2.5 pt-3 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
 					{group.category}
 				</h3>
 			{:else}
@@ -190,7 +197,7 @@
 			</div>
 		{/each}
 		{#if groups.length === 0 && favourites.length === 0}
-			<p class="text-muted-foreground px-2.5 py-4 text-xs">No tabs match “{query}”.</p>
+			<p class="px-2.5 py-4 text-xs text-muted-foreground">No tabs match “{query}”.</p>
 		{/if}
 	</nav>
 
@@ -200,7 +207,9 @@
 				<span class={cn('my-1 size-2.5 rounded-full', status.dot)}></span>
 			</Tip>
 			{#if app.status === 'offline' || app.status === 'reconnecting'}
-				<IconButton label="Reconnect now" side="right" onclick={() => app.reconnectNow()}><RotateCw /></IconButton>
+				<IconButton label="Reconnect now" side="right" onclick={() => app.reconnectNow()}
+					><RotateCw /></IconButton
+				>
 			{/if}
 			<IconButton label="Disconnect" side="right" onclick={() => app.disconnect()}><LogOut /></IconButton>
 		{:else}
@@ -209,18 +218,18 @@
 				{#if others.length > 0}
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger
-							class="hover:bg-muted flex min-w-0 flex-1 items-center gap-1 rounded px-1 py-0.5 text-left text-sm font-medium"
+							class="flex min-w-0 flex-1 items-center gap-1 rounded px-1 py-0.5 text-left text-sm font-medium hover:bg-muted"
 						>
 							<span class="truncate">{app.profile?.label}</span>
-							<ChevronsUpDown class="text-muted-foreground size-3 shrink-0" />
+							<ChevronsUpDown class="size-3 shrink-0 text-muted-foreground" />
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content align="start" class="w-56">
-							<DropdownMenu.Label class="text-muted-foreground text-xs">Switch server</DropdownMenu.Label>
+							<DropdownMenu.Label class="text-xs text-muted-foreground">Switch server</DropdownMenu.Label>
 							{#each others as p (p.profile.id)}
 								<DropdownMenu.Item onclick={() => app.connect(p.profile.id)}>
 									<div class="min-w-0">
 										<p class="truncate">{p.profile.label}</p>
-										<p class="text-muted-foreground truncate text-xs">
+										<p class="truncate text-xs text-muted-foreground">
 											{p.profile.username}@{p.profile.host}
 										</p>
 									</div>
@@ -236,17 +245,25 @@
 			<div class="mt-1 flex items-center gap-2 pl-4 text-xs">
 				<span class="text-muted-foreground">{status.label}</span>
 				<Tip text="Copy host">
-					<button type="button" class="text-muted-foreground hover:text-foreground min-w-0 truncate font-mono" onclick={copyHost}>
+					<button
+						type="button"
+						class="min-w-0 truncate font-mono text-muted-foreground hover:text-foreground"
+						onclick={copyHost}
+					>
 						{app.session?.host}
 					</button>
 				</Tip>
 				{#if app.status === 'offline' || app.status === 'reconnecting'}
-					<button type="button" class="text-primary ml-auto shrink-0 hover:underline" onclick={() => app.reconnectNow()}>
+					<button
+						type="button"
+						class="ml-auto shrink-0 text-primary hover:underline"
+						onclick={() => app.reconnectNow()}
+					>
 						Reconnect
 					</button>
 				{/if}
 			</div>
-			<p class="text-muted-foreground/70 mt-1.5 pl-4 text-[11px]">v{version}</p>
+			<p class="mt-1.5 pl-4 text-[11px] text-muted-foreground/70">v{version}</p>
 		{/if}
 	</footer>
 </aside>

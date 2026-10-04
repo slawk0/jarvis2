@@ -53,13 +53,7 @@ const FULL: Rect = { x: 0, y: 0, w: 1, h: 1 };
 
 export const pane = (id: string): PaneNode => ({ kind: 'pane', id });
 
-function splitNode(
-	id: string,
-	dir: SplitDir,
-	a: LayoutNode,
-	b: LayoutNode,
-	ratio = 0.5
-): SplitNode {
+function splitNode(id: string, dir: SplitDir, a: LayoutNode, b: LayoutNode, ratio = 0.5): SplitNode {
 	return { kind: 'split', id, dir, ratio, a, b };
 }
 
@@ -109,9 +103,7 @@ export function computeDividers(node: LayoutNode, area: Rect = FULL): Divider[] 
 	if (node.kind === 'pane') return [];
 	const [ra, rb] = childAreas(node, area);
 	const rect: Rect =
-		node.dir === 'row'
-			? { x: rb.x, y: area.y, w: 0, h: area.h }
-			: { x: area.x, y: rb.y, w: area.w, h: 0 };
+		node.dir === 'row' ? { x: rb.x, y: area.y, w: 0, h: area.h } : { x: area.x, y: rb.y, w: area.w, h: 0 };
 	return [
 		{ splitId: node.id, dir: node.dir, rect, area },
 		...computeDividers(node.a, ra),
@@ -128,11 +120,7 @@ export function visualOrder(node: LayoutNode): string[] {
 		.map(([id]) => id);
 }
 
-function replace(
-	node: LayoutNode,
-	id: string,
-	make: (found: PaneNode) => LayoutNode
-): LayoutNode {
+function replace(node: LayoutNode, id: string, make: (found: PaneNode) => LayoutNode): LayoutNode {
 	if (node.kind === 'pane') return node.id === id ? make(node) : node;
 	const a = replace(node.a, id, make);
 	const b = replace(node.b, id, make);

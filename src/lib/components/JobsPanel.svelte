@@ -39,32 +39,34 @@
 
 {#snippet statusIcon(job: Job)}
 	{#if job.status === 'running'}
-		<LoaderCircle class="text-info size-4 shrink-0 animate-spin" />
+		<LoaderCircle class="size-4 shrink-0 animate-spin text-info" />
 	{:else if job.status === 'done'}
-		<CircleCheck class="text-success size-4 shrink-0" />
+		<CircleCheck class="size-4 shrink-0 text-success" />
 	{:else if job.status === 'cancelled'}
-		<CircleSlash class="text-muted-foreground size-4 shrink-0" />
+		<CircleSlash class="size-4 shrink-0 text-muted-foreground" />
 	{:else}
-		<CircleX class="text-destructive size-4 shrink-0" />
+		<CircleX class="size-4 shrink-0 text-destructive" />
 	{/if}
 {/snippet}
 
 {#if jobs.panelOpen}
 	<section
 		class={cn(
-			'bg-popover fixed right-4 bottom-4 z-40 flex w-[30rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border shadow-2xl',
+			'fixed right-4 bottom-4 z-40 flex w-[30rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border bg-popover shadow-2xl',
 			collapsed ? 'h-auto' : 'h-[26rem] max-h-[calc(100vh-6rem)]'
 		)}
 		aria-label="Running jobs"
 	>
 		<header class="flex shrink-0 items-center gap-2 border-b px-3 py-2">
 			{#if selected}
-				<IconButton label="Back to job list" onclick={() => (jobs.selectedId = null)}><ArrowLeft /></IconButton>
+				<IconButton label="Back to job list" onclick={() => (jobs.selectedId = null)}
+					><ArrowLeft /></IconButton
+				>
 				{@render statusIcon(selected)}
 				<h2 class="min-w-0 flex-1 truncate text-sm font-semibold">{selected.title}</h2>
 			{:else}
 				<h2 class="text-sm font-semibold">Running jobs</h2>
-				<div class="text-muted-foreground tabular flex items-center gap-2 text-xs">
+				<div class="flex items-center gap-2 text-xs text-muted-foreground tabular">
 					<span class={cn(counts.running > 0 && 'text-info')}>{counts.running} running</span>
 					<span>{counts.done} completed</span>
 					<span class={cn(counts.failed > 0 && 'text-destructive')}>{counts.failed} failed</span>
@@ -81,13 +83,14 @@
 			{#if selected}
 				<div class="flex min-h-0 flex-1 flex-col gap-2 p-2">
 					{#if selected.detail}
-						<pre class="bg-sunken selectable text-muted-foreground max-h-16 shrink-0 overflow-auto rounded-md border px-2 py-1.5 text-[11px] whitespace-pre-wrap">{selected.detail}</pre>
+						<pre
+							class="selectable max-h-16 shrink-0 overflow-auto rounded-md border bg-sunken px-2 py-1.5 text-[11px] whitespace-pre-wrap text-muted-foreground">{selected.detail}</pre>
 					{/if}
 					<LogViewer source={selected} downloadName="{selected.title}.log" class="flex-1" />
-					<div class="text-muted-foreground flex shrink-0 items-center gap-2 text-xs">
+					<div class="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
 						<span class="tabular">{duration(selected)}</span>
 						{#if selected.exitCode !== null}<span>exit code {selected.exitCode}</span>{/if}
-						{#if selected.error}<span class="text-destructive truncate">{selected.error.message}</span>{/if}
+						{#if selected.error}<span class="truncate text-destructive">{selected.error.message}</span>{/if}
 						{#if selected.running}
 							<Button variant="destructive" size="xs" class="ml-auto" onclick={() => selected.stop()}>
 								<Square /> Stop
@@ -98,23 +101,25 @@
 			{:else}
 				<div class="min-h-0 flex-1 overflow-y-auto">
 					{#each list as job (job.id)}
-						<div class="hover:bg-muted/50 flex items-center gap-2 border-b px-3 py-2 last:border-b-0">
+						<div class="flex items-center gap-2 border-b px-3 py-2 last:border-b-0 hover:bg-muted/50">
 							{@render statusIcon(job)}
-							<button type="button" class="min-w-0 flex-1 text-left" onclick={() => (jobs.selectedId = job.id)}>
+							<button
+								type="button"
+								class="min-w-0 flex-1 text-left"
+								onclick={() => (jobs.selectedId = job.id)}
+							>
 								<p class="truncate text-sm font-medium">{job.title}</p>
 								{#if job.detail}
-									<p class="text-muted-foreground truncate font-mono text-[11px]">{job.detail}</p>
+									<p class="truncate font-mono text-[11px] text-muted-foreground">{job.detail}</p>
 								{/if}
 							</button>
-							<span class="text-muted-foreground tabular text-xs">{duration(job)}</span>
+							<span class="text-xs text-muted-foreground tabular">{duration(job)}</span>
 							{#if job.running}
 								<IconButton label="Stop" onclick={() => job.stop()}><Square /></IconButton>
 							{/if}
 						</div>
 					{:else}
-						<p class="text-muted-foreground p-6 text-center text-sm">
-							Long-running operations show up here.
-						</p>
+						<p class="p-6 text-center text-sm text-muted-foreground">Long-running operations show up here.</p>
 					{/each}
 				</div>
 				<footer class="flex shrink-0 items-center justify-end border-t px-2 py-1.5">

@@ -30,8 +30,8 @@
 			class={cn(
 				'relative -mb-px flex h-8 items-center gap-1.5 border-b-2 px-3 text-sm whitespace-nowrap transition-colors',
 				active
-					? 'border-primary text-foreground font-medium'
-					: 'text-muted-foreground hover:text-foreground border-transparent'
+					? 'border-primary font-medium text-foreground'
+					: 'border-transparent text-muted-foreground hover:text-foreground'
 			)}
 			onclick={() => {
 				value = item.id;
@@ -41,7 +41,7 @@
 			{#if item.icon}<item.icon class="size-3.5" />{/if}
 			{item.label}
 			{#if item.count != null}
-				<span class="bg-muted text-muted-foreground tabular rounded-full px-1.5 text-[11px] leading-4">
+				<span class="rounded-full bg-muted px-1.5 text-[11px] leading-4 text-muted-foreground tabular">
 					{item.count}
 				</span>
 			{/if}

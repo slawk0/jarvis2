@@ -102,35 +102,106 @@ const tab = (
 ): TabDef => ({ id, label, icon, category, load, requires });
 
 export const TABS: TabDef[] = [
-	tab('dashboard', 'Dashboard', LayoutDashboard, 'Overview', () => import('$lib/features/dashboard/Dashboard.svelte')),
-	tab('terminal', 'Terminal', SquareTerminal, 'Overview', () => import('$lib/features/terminal/Terminal.svelte')),
+	tab(
+		'dashboard',
+		'Dashboard',
+		LayoutDashboard,
+		'Overview',
+		() => import('$lib/features/dashboard/Dashboard.svelte')
+	),
+	tab(
+		'terminal',
+		'Terminal',
+		SquareTerminal,
+		'Overview',
+		() => import('$lib/features/terminal/Terminal.svelte')
+	),
 	tab('runbooks', 'Runbooks', ListChecks, 'Overview', () => import('$lib/features/runbooks/Runbooks.svelte')),
 
-	tab('services', 'Services', Cog, 'System', () => import('$lib/features/services/Services.svelte'), ['systemd']),
+	tab('services', 'Services', Cog, 'System', () => import('$lib/features/services/Services.svelte'), [
+		'systemd'
+	]),
 	tab('docker', 'Docker', Boxes, 'System', () => import('$lib/features/docker/Docker.svelte'), ['docker']),
 	tab('processes', 'Processes', Cpu, 'System', () => import('$lib/features/processes/Processes.svelte')),
-	tab('timers', 'Systemd Timers', Timer, 'System', () => import('$lib/features/timers/Timers.svelte'), ['systemd']),
+	tab('timers', 'Systemd Timers', Timer, 'System', () => import('$lib/features/timers/Timers.svelte'), [
+		'systemd'
+	]),
 	tab('cron', 'Cron', CalendarClock, 'System', () => import('$lib/features/cron/Cron.svelte'), ['cron']),
 	tab('disks', 'Disks', HardDrive, 'System', () => import('$lib/features/disks/Disks.svelte')),
-	tab('maintenance', 'Maintenance', Wrench, 'System', () => import('$lib/features/maintenance/Maintenance.svelte')),
+	tab(
+		'maintenance',
+		'Maintenance',
+		Wrench,
+		'System',
+		() => import('$lib/features/maintenance/Maintenance.svelte')
+	),
 	tab('users', 'Users', Users, 'System', () => import('$lib/features/users/Users.svelte')),
 	tab('env', 'Env Variables', Variable, 'System', () => import('$lib/features/env/Env.svelte')),
 
 	tab('nginx', 'Nginx Manager', Server, 'Network & Web', () => import('$lib/features/nginx/Nginx.svelte')),
-	tab('pangolin', 'Pangolin Proxy', Waypoints, 'Network & Web', () => import('$lib/features/pangolin/Pangolin.svelte')),
-	tab('network', 'Network / Ports', Network, 'Network & Web', () => import('$lib/features/network/Network.svelte')),
-	tab('netdiag', 'Net Diagnostics', Radar, 'Network & Web', () => import('$lib/features/netdiag/NetDiag.svelte')),
+	tab(
+		'pangolin',
+		'Pangolin Proxy',
+		Waypoints,
+		'Network & Web',
+		() => import('$lib/features/pangolin/Pangolin.svelte')
+	),
+	tab(
+		'network',
+		'Network / Ports',
+		Network,
+		'Network & Web',
+		() => import('$lib/features/network/Network.svelte')
+	),
+	tab(
+		'netdiag',
+		'Net Diagnostics',
+		Radar,
+		'Network & Web',
+		() => import('$lib/features/netdiag/NetDiag.svelte')
+	),
 
 	tab('firewall', 'Firewall', Shield, 'Security', () => import('$lib/features/firewall/Firewall.svelte')),
-	tab('crowdsec', 'CrowdSec', ShieldAlert, 'Security', () => import('$lib/features/crowdsec/CrowdSec.svelte')),
+	tab(
+		'crowdsec',
+		'CrowdSec',
+		ShieldAlert,
+		'Security',
+		() => import('$lib/features/crowdsec/CrowdSec.svelte')
+	),
 
-	tab('files', 'Files (SFTP)', FolderTree, 'Data & Storage', () => import('$lib/features/files/Files.svelte')),
-	tab('databases', 'Databases', Database, 'Data & Storage', () => import('$lib/features/databases/Databases.svelte')),
+	tab(
+		'files',
+		'Files (SFTP)',
+		FolderTree,
+		'Data & Storage',
+		() => import('$lib/features/files/Files.svelte')
+	),
+	tab(
+		'databases',
+		'Databases',
+		Database,
+		'Data & Storage',
+		() => import('$lib/features/databases/Databases.svelte')
+	),
 	tab('backups', 'Backups', Archive, 'Data & Storage', () => import('$lib/features/backups/Backups.svelte')),
-	tab('restic', 'Restic Backups', DatabaseBackup, 'Data & Storage', () => import('$lib/features/restic/Restic.svelte'), ['restic']),
+	tab(
+		'restic',
+		'Restic Backups',
+		DatabaseBackup,
+		'Data & Storage',
+		() => import('$lib/features/restic/Restic.svelte'),
+		['restic']
+	),
 
 	tab('logs', 'Logs', ScrollText, 'Monitoring', () => import('$lib/features/logs/Logs.svelte')),
-	tab('loganalysis', 'Log Analysis', ChartColumn, 'Monitoring', () => import('$lib/features/loganalysis/LogAnalysis.svelte'))
+	tab(
+		'loganalysis',
+		'Log Analysis',
+		ChartColumn,
+		'Monitoring',
+		() => import('$lib/features/loganalysis/LogAnalysis.svelte')
+	)
 ];
 
 const BY_ID = new Map(TABS.map((t) => [t.id, t]));
@@ -143,16 +214,7 @@ export function isTabId(id: unknown): id is TabId {
 	return typeof id === 'string' && BY_ID.has(id as TabId);
 }
 
-export const TAB_COLORS = [
-	'red',
-	'orange',
-	'yellow',
-	'green',
-	'teal',
-	'blue',
-	'purple',
-	'pink'
-] as const;
+export const TAB_COLORS = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'] as const;
 export type TabColor = (typeof TAB_COLORS)[number];
 
 export const DEFAULT_TAB: TabId = 'dashboard';

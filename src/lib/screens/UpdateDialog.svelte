@@ -25,12 +25,13 @@
 		<div class="flex flex-col gap-3">
 			{#if updater.notes}
 				<!-- Release notes are rendered as plain text, never as HTML. -->
-				<pre class="bg-sunken selectable max-h-64 overflow-auto rounded-md border p-3 font-sans text-xs whitespace-pre-wrap">{updater.notes}</pre>
+				<pre
+					class="selectable max-h-64 overflow-auto rounded-md border bg-sunken p-3 font-sans text-xs whitespace-pre-wrap">{updater.notes}</pre>
 			{/if}
 			{#if updater.phase === 'downloading' || updater.phase === 'installing'}
 				<div class="flex flex-col gap-1.5">
 					<Progress value={updater.progress ?? 0} class="h-1.5" />
-					<p class="text-muted-foreground tabular text-xs">
+					<p class="text-xs text-muted-foreground tabular">
 						{#if updater.phase === 'installing'}
 							Installing… Jarvis will restart.
 						{:else if updater.total}
@@ -42,7 +43,7 @@
 				</div>
 			{/if}
 			{#if updater.phase === 'error'}
-				<p class="text-destructive selectable text-xs" role="alert">The update failed: {updater.error}</p>
+				<p class="selectable text-xs text-destructive" role="alert">The update failed: {updater.error}</p>
 			{/if}
 		</div>
 		{#snippet footer()}
@@ -50,7 +51,9 @@
 				<Button variant="outline" onclick={() => updater.later()}>Close</Button>
 				<Button onclick={() => updater.install()}>Retry</Button>
 			{:else}
-				<Button variant="outline" disabled={!updater.dismissible} onclick={() => updater.later()}>Later</Button>
+				<Button variant="outline" disabled={!updater.dismissible} onclick={() => updater.later()}
+					>Later</Button
+				>
 				<Button disabled={!updater.dismissible} onclick={() => updater.install()}>
 					{updater.dismissible ? 'Update now' : 'Updating…'}
 				</Button>

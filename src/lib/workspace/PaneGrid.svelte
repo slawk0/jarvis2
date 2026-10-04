@@ -114,7 +114,7 @@
 		>
 			<div
 				class={cn(
-					'bg-primary absolute rounded-full opacity-0 transition-opacity group-hover:opacity-70',
+					'absolute rounded-full bg-primary opacity-0 transition-opacity group-hover:opacity-70',
 					resizing === divider.splitId && 'opacity-100',
 					divider.dir === 'row' ? 'inset-y-2 left-[3px] w-[2px]' : 'inset-x-2 top-[3px] h-[2px]'
 				)}
@@ -127,10 +127,10 @@
 		<div class="absolute inset-0 z-30"></div>
 		{#if dropRect}
 			<div
-				class="border-primary bg-primary/15 pointer-events-none absolute z-30 flex items-center justify-center rounded-lg border-2 border-dashed transition-all duration-75"
+				class="pointer-events-none absolute z-30 flex items-center justify-center rounded-lg border-2 border-dashed border-primary bg-primary/15 transition-all duration-75"
 				style={box(dropRect)}
 			>
-				<span class="bg-primary text-primary-foreground rounded-md px-2 py-1 text-xs font-medium shadow">
+				<span class="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground shadow">
 					{dropHint}
 				</span>
 			</div>
@@ -140,7 +140,7 @@
 
 {#if drag.payload}
 	<div
-		class="bg-popover pointer-events-none fixed z-[90] rounded-md border px-2.5 py-1.5 text-xs font-medium shadow-lg"
+		class="pointer-events-none fixed z-[90] rounded-md border bg-popover px-2.5 py-1.5 text-xs font-medium shadow-lg"
 		style="left:{drag.x + 12}px;top:{drag.y + 12}px"
 	>
 		{drag.label}

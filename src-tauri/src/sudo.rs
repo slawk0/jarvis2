@@ -80,17 +80,13 @@ impl Sudo {
             Mode::Password => {
                 let mut inner = self.inner.lock();
                 match &inner.password {
-                    Some((password, verified)) if now.duration_since(*verified) < CACHE_TTL => {
-                        Ok(Plan::WithPassword(password.clone()))
-                    }
+                    Some((password, verified)) if now.duration_since(*verified) < CACHE_TTL => Ok(Plan::WithPassword(password.clone())),
                     Some(_) => {
                         inner.password = None;
                         inner.had_password = true;
                         Err(AppError::code(ErrorCode::SudoPasswordExpired))
                     }
-                    None if inner.had_password => {
-                        Err(AppError::code(ErrorCode::SudoPasswordExpired))
-                    }
+                    None if inner.had_password => Err(AppError::code(ErrorCode::SudoPasswordExpired)),
                     None => Err(AppError::code(ErrorCode::SudoPasswordRequired)),
                 }
             }
@@ -127,10 +123,7 @@ impl Sudo {
             inner.locked_until = Some(now + LOCKOUT);
             AppError::new(ErrorCode::SudoLocked, LOCKOUT.as_secs().to_string())
         } else {
-            AppError::new(
-                ErrorCode::SudoPasswordWrong,
-                (MAX_FAILURES - inner.failures).to_string(),
-            )
+            AppError::new(ErrorCode::SudoPasswordWrong, (MAX_FAILURES - inner.failures).to_string())
         }
     }
 }
@@ -147,9 +140,7 @@ impl Session {
             Mode::Unavailable
         } else {
             // `-k` ignores cached credentials, so this only succeeds with NOPASSWD.
-            let probe = self
-                .exec_line("sudo -k -n true", None, Duration::from_secs(15))
-                .await?;
+            let probe = self.exec_line("sudo -k -n true", None, Duration::from_secs(15)).await?;
             if probe.success() {
                 Mode::Passwordless
             } else {
@@ -185,9 +176,7 @@ impl Session {
         }
         let line = format!("env LC_ALL=C sudo -k -S -p {} true", q(SUDO_PROMPT));
         let stdin = format!("{password}\n");
-        let out = self
-            .exec_line(&line, Some(stdin.as_bytes()), Duration::from_secs(20))
-            .await?;
+        let out = self.exec_line(&line, Some(stdin.as_bytes()), Duration::from_secs(20)).await?;
         let (_, tokens) = strip_tokens(&out.stderr);
         let prompts = tokens.iter().filter(|t| *t == "sudo").count();
         if out.success() && prompts <= 1 {
@@ -209,14 +198,8 @@ mod tests {
         let now = Instant::now();
         assert_eq!(sudo.plan(Mode::Root, now).unwrap(), Plan::Direct);
         assert_eq!(sudo.plan(Mode::Passwordless, now).unwrap(), Plan::NoPassword);
-        assert_eq!(
-            sudo.plan(Mode::Unavailable, now).unwrap_err().code,
-            ErrorCode::SudoUnavailable
-        );
-        assert_eq!(
-            sudo.plan(Mode::Password, now).unwrap_err().code,
-            ErrorCode::SudoPasswordRequired
-        );
+        assert_eq!(sudo.plan(Mode::Unavailable, now).unwrap_err().code, ErrorCode::SudoUnavailable);
+        assert_eq!(sudo.plan(Mode::Password, now).unwrap_err().code, ErrorCode::SudoPasswordRequired);
     }
 
     #[test]
@@ -224,26 +207,13 @@ mod tests {
         let sudo = Sudo::new();
         let t0 = Instant::now();
         sudo.record_success("pw".into(), t0);
-        assert_eq!(
-            sudo.plan(Mode::Password, t0 + Duration::from_secs(14 * 60))
-                .unwrap(),
-            Plan::WithPassword("pw".into())
-        );
+        assert_eq!(sudo.plan(Mode::Password, t0 + Duration::from_secs(14 * 60)).unwrap(), Plan::WithPassword("pw".into()));
         let late = t0 + CACHE_TTL + Duration::from_secs(1);
-        assert_eq!(
-            sudo.plan(Mode::Password, late).unwrap_err().code,
-            ErrorCode::SudoPasswordExpired
-        );
+        assert_eq!(sudo.plan(Mode::Password, late).unwrap_err().code, ErrorCode::SudoPasswordExpired);
         // Still reported as expired until the user authenticates again.
-        assert_eq!(
-            sudo.plan(Mode::Password, late).unwrap_err().code,
-            ErrorCode::SudoPasswordExpired
-        );
+        assert_eq!(sudo.plan(Mode::Password, late).unwrap_err().code, ErrorCode::SudoPasswordExpired);
         sudo.record_success("pw2".into(), late);
-        assert_eq!(
-            sudo.plan(Mode::Password, late).unwrap(),
-            Plan::WithPassword("pw2".into())
-        );
+        assert_eq!(sudo.plan(Mode::Password, late).unwrap(), Plan::WithPassword("pw2".into()));
     }
 
     #[test]
@@ -261,10 +231,7 @@ mod tests {
         assert_eq!(sudo.locked_for(t0 + Duration::from_secs(10)), Some(50));
         assert_eq!(sudo.locked_for(t0 + LOCKOUT + Duration::from_secs(1)), None);
         // Counter restarts after the lockout.
-        assert_eq!(
-            sudo.record_failure(t0 + LOCKOUT + Duration::from_secs(2)).code,
-            ErrorCode::SudoPasswordWrong
-        );
+        assert_eq!(sudo.record_failure(t0 + LOCKOUT + Duration::from_secs(2)).code, ErrorCode::SudoPasswordWrong);
     }
 
     #[test]
@@ -275,14 +242,8 @@ mod tests {
             sudo.record_failure(t0);
         }
         sudo.record_success("pw".into(), t0);
-        assert_eq!(
-            sudo.record_failure(t0).details.as_deref(),
-            Some((MAX_FAILURES - 1).to_string().as_str())
-        );
+        assert_eq!(sudo.record_failure(t0).details.as_deref(), Some((MAX_FAILURES - 1).to_string().as_str()));
         sudo.invalidate();
-        assert_eq!(
-            sudo.plan(Mode::Password, t0).unwrap_err().code,
-            ErrorCode::SudoPasswordRequired
-        );
+        assert_eq!(sudo.plan(Mode::Password, t0).unwrap_err().code, ErrorCode::SudoPasswordRequired);
     }
 }

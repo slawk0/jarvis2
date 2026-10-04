@@ -12,11 +12,18 @@
 		ref?: HTMLInputElement | null;
 	}
 
-	let { value = $bindable(''), placeholder = 'Search…', class: className, ref = $bindable(null) }: Props = $props();
+	let {
+		value = $bindable(''),
+		placeholder = 'Search…',
+		class: className,
+		ref = $bindable(null)
+	}: Props = $props();
 </script>
 
 <div class={cn('relative w-56', className)}>
-	<Search class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+	<Search
+		class="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+	/>
 	<Input
 		bind:ref
 		bind:value
@@ -34,7 +41,7 @@
 	{#if value}
 		<button
 			type="button"
-			class="text-muted-foreground hover:text-foreground absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-0.5"
+			class="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
 			aria-label="Clear search"
 			onclick={() => (value = '')}
 		>

@@ -11,7 +11,7 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import SelectField from '$lib/components/SelectField.svelte';
 	import SubTabs from '$lib/components/SubTabs.svelte';
-	import { TERMINAL_THEMES } from '$lib/features/terminal/themes';
+	import TerminalSettings from '$lib/features/terminal/TerminalSettings.svelte';
 	import { api, type KnownHost, type Theme } from '$lib/ipc';
 	import { app } from '$lib/services/app.svelte';
 	import { confirm } from '$lib/services/confirm.svelte';
@@ -22,8 +22,6 @@
 	import { clamp } from '$lib/utils';
 	import { workspace } from '$lib/workspace/workspace.svelte';
 
-	type Section = 'general' | 'terminal' | 'alerts' | 'hosts' | 'about';
-	let section = $state<Section>('general');
 	let version = $state('');
 	let downloadDir = $state('');
 	let knownHosts = $state<KnownHost[]>([]);
@@ -94,13 +92,12 @@
 		{ value: 'light', label: 'Light' },
 		{ value: 'system', label: 'Follow system' }
 	];
-	const FONTS = ['JetBrains Mono Variable', 'Cascadia Code', 'Consolas', 'Menlo', 'DejaVu Sans Mono', 'monospace'];
 </script>
 
-<Modal bind:open={workspace.settingsOpen} title="Settings" size="lg" class="h-[34rem]">
-	<SubTabs items={sections} bind:value={section} class="mb-4" />
+<Modal bind:open={workspace.settingsOpen} title="Settings" size="lg" class="h-[44rem]">
+	<SubTabs items={sections} bind:value={workspace.settingsSection} class="mb-4" />
 
-	{#if section === 'general'}
+	{#if workspace.settingsSection === 'general'}
 		<div class="flex flex-col gap-4">
 			<Field label="Theme">
 				<SelectField
@@ -110,81 +107,24 @@
 					onchange={(v) => settings.update((s) => (s.theme = v))}
 				/>
 			</Field>
-			<Field label="Default download folder" hint="Where files and backups downloaded from servers are saved.">
+			<Field
+				label="Default download folder"
+				hint="Where files and backups downloaded from servers are saved."
+			>
 				<div class="flex gap-2">
 					<Input value={downloadDir} readonly class="font-mono text-xs" />
 					<Button variant="outline" onclick={chooseDownloadDir}>Choose…</Button>
 				</div>
 			</Field>
 		</div>
-	{:else if section === 'terminal'}
-		<div class="grid grid-cols-2 gap-4">
-			<Field label="Font">
-				<SelectField
-					value={settings.value.terminal.fontFamily}
-					options={FONTS}
-					onchange={(v) => settings.update((s) => (s.terminal.fontFamily = v))}
-				/>
-			</Field>
-			<Field label="Font size">
-				<Input
-					type="number"
-					min="8"
-					max="32"
-					value={settings.value.terminal.fontSize}
-					onchange={(e) => {
-						const size = clamp(Number(e.currentTarget.value) || 13, 8, 32);
-						settings.update((s) => (s.terminal.fontSize = size));
-					}}
-				/>
-			</Field>
-			<Field label="Colour theme">
-				<SelectField
-					value={settings.value.terminal.theme}
-					options={Object.entries(TERMINAL_THEMES).map(([value, t]) => ({ value, label: t.label }))}
-					onchange={(v) => settings.update((s) => (s.terminal.theme = v))}
-				/>
-			</Field>
-			<Field label="Scrollback lines">
-				<Input
-					type="number"
-					min="500"
-					max="100000"
-					step="500"
-					value={settings.value.terminal.scrollback}
-					onchange={(e) => {
-						const lines = clamp(Number(e.currentTarget.value) || 10000, 500, 100000);
-						settings.update((s) => (s.terminal.scrollback = lines));
-					}}
-				/>
-			</Field>
-			<label class="col-span-2 flex items-center justify-between gap-4 text-sm">
-				<span>
-					Copy on select
-					<span class="text-muted-foreground block text-xs">Selecting text copies it to the clipboard.</span>
-				</span>
-				<Switch
-					checked={settings.value.terminal.copyOnSelect}
-					onCheckedChange={(v) => settings.update((s) => (s.terminal.copyOnSelect = v))}
-				/>
-			</label>
-			<label class="col-span-2 flex items-center justify-between gap-4 text-sm">
-				<span>
-					Right-click pastes
-					<span class="text-muted-foreground block text-xs">Shift+right-click always opens the menu.</span>
-				</span>
-				<Switch
-					checked={settings.value.terminal.rightClickPaste}
-					onCheckedChange={(v) => settings.update((s) => (s.terminal.rightClickPaste = v))}
-				/>
-			</label>
-		</div>
-	{:else if section === 'alerts'}
+	{:else if workspace.settingsSection === 'terminal'}
+		<TerminalSettings />
+	{:else if workspace.settingsSection === 'alerts'}
 		<div class="flex flex-col gap-4">
 			<label class="flex items-center justify-between gap-4 text-sm">
 				<span>
 					Desktop alerts for {app.profile?.label}
-					<span class="text-muted-foreground block text-xs">
+					<span class="block text-xs text-muted-foreground">
 						Notify when a resource stays above its threshold (at most every 5 minutes per metric).
 					</span>
 				</span>
@@ -192,19 +132,42 @@
 			</label>
 			<div class="grid grid-cols-3 gap-3">
 				<Field label="CPU %">
-					<Input type="number" min="1" max="100" bind:value={thresholds.cpu} onchange={saveThresholds} disabled={!thresholds.enabled} />
+					<Input
+						type="number"
+						min="1"
+						max="100"
+						bind:value={thresholds.cpu}
+						onchange={saveThresholds}
+						disabled={!thresholds.enabled}
+					/>
 				</Field>
 				<Field label="RAM %">
-					<Input type="number" min="1" max="100" bind:value={thresholds.ram} onchange={saveThresholds} disabled={!thresholds.enabled} />
+					<Input
+						type="number"
+						min="1"
+						max="100"
+						bind:value={thresholds.ram}
+						onchange={saveThresholds}
+						disabled={!thresholds.enabled}
+					/>
 				</Field>
 				<Field label="Disk %">
-					<Input type="number" min="1" max="100" bind:value={thresholds.disk} onchange={saveThresholds} disabled={!thresholds.enabled} />
+					<Input
+						type="number"
+						min="1"
+						max="100"
+						bind:value={thresholds.disk}
+						onchange={saveThresholds}
+						disabled={!thresholds.enabled}
+					/>
 				</Field>
 			</div>
 		</div>
-	{:else if section === 'hosts'}
+	{:else if workspace.settingsSection === 'hosts'}
 		{#if knownHosts.length === 0}
-			<p class="text-muted-foreground text-sm">No trusted hosts yet. They are added when you first connect to a server.</p>
+			<p class="text-sm text-muted-foreground">
+				No trusted hosts yet. They are added when you first connect to a server.
+			</p>
 		{:else}
 			<ul class="flex flex-col divide-y rounded-lg border">
 				{#each knownHosts as host (host.host + host.port + host.fingerprint)}
@@ -212,9 +175,9 @@
 						<div class="selectable min-w-0 flex-1">
 							<p class="truncate text-sm font-medium">
 								{host.host}{host.port === 22 ? '' : `:${host.port}`}
-								<span class="text-muted-foreground text-xs font-normal">{host.keyType}</span>
+								<span class="text-xs font-normal text-muted-foreground">{host.keyType}</span>
 							</p>
-							<p class="text-muted-foreground truncate font-mono text-[11px]">{host.fingerprint}</p>
+							<p class="truncate font-mono text-[11px] text-muted-foreground">{host.fingerprint}</p>
 						</div>
 						<IconButton label="Forget host" onclick={() => forget(host)}><Trash2 /></IconButton>
 					</li>
@@ -227,14 +190,19 @@
 				<img src="/logo.svg" alt="" class="size-12" />
 				<div>
 					<p class="font-semibold">Jarvis Server Manager</p>
-					<p class="text-muted-foreground selectable text-sm">Version {version}</p>
+					<p class="selectable text-sm text-muted-foreground">Version {version}</p>
 				</div>
 			</div>
-			<p class="text-muted-foreground text-sm">
-				Manage Linux servers over SSH. Nothing is installed on the server; credentials stay in your system keyring.
+			<p class="text-sm text-muted-foreground">
+				Manage Linux servers over SSH. Nothing is installed on the server; credentials stay in your system
+				keyring.
 			</p>
 			<div>
-				<Button variant="outline" disabled={updater.phase === 'checking'} onclick={() => updater.check(false)}>
+				<Button
+					variant="outline"
+					disabled={updater.phase === 'checking'}
+					onclick={() => updater.check(false)}
+				>
 					{updater.phase === 'checking' ? 'Checking…' : 'Check for updates'}
 				</Button>
 			</div>

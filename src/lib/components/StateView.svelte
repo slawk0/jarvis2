@@ -24,7 +24,17 @@
 		children?: Snippet;
 	}
 
-	let { kind, title, message, error, icon, onretry, compact = false, class: className, children }: Props = $props();
+	let {
+		kind,
+		title,
+		message,
+		error,
+		icon,
+		onretry,
+		compact = false,
+		class: className,
+		children
+	}: Props = $props();
 
 	const Icon = $derived(icon ?? (kind === 'error' ? CircleAlert : Inbox));
 	const needsRoot = $derived(error?.is('SUDO_PASSWORD_REQUIRED', 'SUDO_PASSWORD_EXPIRED') ?? false);
@@ -32,7 +42,7 @@
 
 <div
 	class={cn(
-		'text-muted-foreground flex flex-col items-center justify-center gap-2 text-center',
+		'flex flex-col items-center justify-center gap-2 text-center text-muted-foreground',
 		compact ? 'p-4' : 'h-full min-h-40 p-8',
 		className
 	)}
@@ -42,7 +52,7 @@
 		<p class="text-sm">{title ?? 'Loading…'}</p>
 	{:else}
 		<Icon class={cn('size-7', kind === 'error' ? 'text-destructive' : 'opacity-60')} />
-		<p class="text-foreground text-sm font-medium">
+		<p class="text-sm font-medium text-foreground">
 			{title ?? (kind === 'error' ? (error?.title ?? 'Something went wrong') : 'Nothing here yet')}
 		</p>
 		{#if message ?? error?.details}

@@ -17,7 +17,8 @@
 	export type Severity = 'error' | 'warn' | 'debug' | null;
 
 	export function severityOf(line: string): Severity {
-		if (/\b(error|err|fatal|crit(ical)?|emerg|alert|panic|fail(ed|ure)?|denied)\b/i.test(line)) return 'error';
+		if (/\b(error|err|fatal|crit(ical)?|emerg|alert|panic|fail(ed|ure)?|denied)\b/i.test(line))
+			return 'error';
 		if (/\bwarn(ing)?\b/i.test(line)) return 'warn';
 		if (/\b(debug|trace)\b/i.test(line)) return 'debug';
 		return null;
@@ -25,7 +26,7 @@
 </script>
 
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import { save } from '@tauri-apps/plugin-dialog';
 	import ArrowDownToLine from '@lucide/svelte/icons/arrow-down-to-line';
 	import Copy from '@lucide/svelte/icons/copy';
@@ -107,11 +108,12 @@
 
 	$effect(() => {
 		const current = source;
+		// `reset` bumps `version`; untracked so this effect only follows `source`.
 		if (current === null || typeof current === 'string') {
-			reset(current ?? '');
+			untrack(() => reset(current ?? ''));
 			return;
 		}
-		reset(current.log);
+		untrack(() => reset(current.log));
 		return current.onOutput((chunk) => {
 			if (paused) pending += chunk;
 			else ingest(chunk);
@@ -128,7 +130,8 @@
 
 	const visibleLines = $derived.by(() => {
 		void version;
-		const all = partial ? [...lines, cleanLine(partial)] : lines;
+		// Always a fresh array: a derived that returns the same reference does not notify.
+		const all = partial ? [...lines, cleanLine(partial)] : lines.slice();
 		const q = filter.trim().toLowerCase();
 		return q ? all.filter((l) => l.toLowerCase().includes(q)) : all;
 	});
@@ -182,12 +185,12 @@
 	const COLORS = { error: 'text-destructive', warn: 'text-warning', debug: 'text-muted-foreground' };
 </script>
 
-<div class={cn('bg-terminal flex min-h-0 flex-col overflow-hidden rounded-lg border', className)}>
+<div class={cn('flex min-h-0 flex-col overflow-hidden rounded-lg border bg-terminal', className)}>
 	{#if controls}
-		<div class="bg-card flex shrink-0 items-center gap-1.5 border-b px-2 py-1">
+		<div class="flex shrink-0 items-center gap-1.5 border-b bg-card px-2 py-1">
 			{@render toolbar?.()}
 			<SearchInput bind:value={filter} placeholder="Filter lines…" class="w-48" />
-			<span class="text-muted-foreground tabular ml-1 text-xs">
+			<span class="ml-1 text-xs text-muted-foreground tabular">
 				{visibleLines.length.toLocaleString()} line{visibleLines.length === 1 ? '' : 's'}
 			</span>
 			<div class="ml-auto flex items-center gap-0.5">
@@ -207,7 +210,7 @@
 	{/if}
 	<div bind:this={scroller} class="selectable min-h-0 flex-1 overflow-auto" onscroll={onScroll}>
 		{#if visibleLines.length === 0}
-			<p class="text-muted-foreground p-3 text-xs">{filter ? 'No lines match the filter.' : placeholder}</p>
+			<p class="p-3 text-xs text-muted-foreground">{filter ? 'No lines match the filter.' : placeholder}</p>
 		{:else}
 			<div
 				class="min-w-max px-3 py-2 font-mono text-xs"

@@ -61,10 +61,7 @@ impl AppState {
 
     /// The active server session, or `NOT_CONNECTED`.
     pub fn session(&self) -> AppResult<Arc<Session>> {
-        self.session
-            .read()
-            .clone()
-            .ok_or_else(|| AppError::code(ErrorCode::NotConnected))
+        self.session.read().clone().ok_or_else(|| AppError::code(ErrorCode::NotConnected))
     }
 
     pub fn session_opt(&self) -> Option<Arc<Session>> {

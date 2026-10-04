@@ -11,8 +11,7 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit({
 			compilerOptions: {
-				runes: ({ filename }) =>
-					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
+				runes: ({ filename }) => (filename.split(/[/\\]/).includes('node_modules') ? undefined : true)
 			},
 			// Tauri serves the app from disk: a single prerendered shell, no SSR.
 			adapter: adapter({ fallback: 'index.html' })

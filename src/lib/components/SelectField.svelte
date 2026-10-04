@@ -28,25 +28,26 @@
 		onchange
 	}: Props = $props();
 
-	const items = $derived(
-		options.map((o): Option => (typeof o === 'string' ? { value: o, label: o } : o))
-	);
+	const items = $derived(options.map((o): Option => (typeof o === 'string' ? { value: o, label: o } : o)));
 	const current = $derived(items.find((o) => o.value === value));
 </script>
 
 <Select.Root
 	type="single"
 	{disabled}
-	bind:value={() => value as string, (v) => {
+	bind:value={
+		() => value as string,
+		(v) => {
 			value = v as T;
 			onchange?.(v as T);
-		}}
+		}
+	}
 >
 	<Select.Trigger class={className} {size}>
 		{#if current}
 			<span class="truncate">{current.label}</span>
 		{:else}
-			<span class="text-muted-foreground truncate">{placeholder}</span>
+			<span class="truncate text-muted-foreground">{placeholder}</span>
 		{/if}
 	</Select.Trigger>
 	<Select.Content>

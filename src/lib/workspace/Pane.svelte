@@ -33,18 +33,18 @@
 {#if pane}
 	<div
 		class={cn(
-			'bg-background flex h-full min-h-0 flex-col overflow-hidden',
+			'flex h-full min-h-0 flex-col overflow-hidden bg-background',
 			multi && 'rounded-lg border',
-			multi && focused && 'border-primary/60 ring-primary/20 ring-1'
+			multi && focused && 'border-primary/60 ring-1 ring-primary/20'
 		)}
 		onpointerdowncapture={() => workspace.focus(paneId)}
 		onfocusin={() => workspace.focus(paneId)}
 	>
 		{#if multi}
-			<header class="bg-card flex h-8 shrink-0 items-center gap-1 border-b pr-1 pl-0.5">
+			<header class="flex h-8 shrink-0 items-center gap-1 border-b bg-card pr-1 pl-0.5">
 				<button
 					type="button"
-					class="text-muted-foreground hover:text-foreground flex h-6 w-5 cursor-grab items-center justify-center active:cursor-grabbing"
+					class="flex h-6 w-5 cursor-grab items-center justify-center text-muted-foreground hover:text-foreground active:cursor-grabbing"
 					aria-label="Drag to move pane"
 					onpointerdown={ondragstart}
 				>
@@ -52,16 +52,18 @@
 				</button>
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger
-						class="hover:bg-muted flex h-6 min-w-0 items-center gap-1.5 rounded px-1.5 text-xs font-medium"
+						class="flex h-6 min-w-0 items-center gap-1.5 rounded px-1.5 text-xs font-medium hover:bg-muted"
 					>
 						{#if current}<current.icon class="size-3.5 shrink-0" />{/if}
 						<span class="truncate">{current?.label}</span>
-						<ChevronDown class="text-muted-foreground size-3 shrink-0" />
+						<ChevronDown class="size-3 shrink-0 text-muted-foreground" />
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="start" class="max-h-[70vh] w-52 overflow-y-auto">
 						{#each CATEGORIES as category (category)}
 							<DropdownMenu.Group>
-								<DropdownMenu.GroupHeading class="text-muted-foreground text-[11px]">{category}</DropdownMenu.GroupHeading>
+								<DropdownMenu.GroupHeading class="text-[11px] text-muted-foreground"
+									>{category}</DropdownMenu.GroupHeading
+								>
 								{#each TABS.filter((t) => t.category === category) as t (t.id)}
 									<DropdownMenu.Item onclick={() => workspace.openTab(t.id as TabId, paneId)}>
 										<t.icon class="size-3.5" />

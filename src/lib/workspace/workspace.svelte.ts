@@ -2,7 +2,7 @@
  * Workspace state: the pane tree, what each pane shows, focus, per-pane tab
  * history and the back-handler stack. Persisted per profile.
  */
-import { getContext, setContext } from 'svelte';
+import { getContext, setContext, untrack } from 'svelte';
 import { loadDoc, saveDoc } from '$lib/services/profile-data';
 import { confirm } from '$lib/services/confirm.svelte';
 import { debounce, uid } from '$lib/utils';
@@ -30,9 +30,7 @@ import { DEFAULT_TAB, TABS, isTabId, tabDef, type TabExports, type TabId } from 
 
 /** Cross-tab requests, e.g. "look up this IP" or "open a container shell". */
 export interface TabRequests {
-	terminal:
-		| { kind: 'container'; container: string; shell: string }
-		| { kind: 'edit'; path: string };
+	terminal: { kind: 'container'; container: string; shell: string } | { kind: 'edit'; path: string };
 	netdiag: { ip: string };
 	files: { path: string };
 	logs: { unit: string };
@@ -73,6 +71,8 @@ class PaneState {
 	}
 }
 
+export type SettingsSection = 'general' | 'terminal' | 'alerts' | 'hosts' | 'about';
+
 class Workspace {
 	layout = $state<LayoutNode>(paneNode('p1'));
 	panes = $state<Record<string, PaneState>>({});
@@ -80,6 +80,7 @@ class Workspace {
 	backStack = $state<BackEntry[]>([]);
 	shortcutsOpen = $state(false);
 	settingsOpen = $state(false);
+	settingsSection = $state<SettingsSection>('general');
 	/** Pending cross-tab requests, consumed by the receiving tab. */
 	requests = $state<{ [K in keyof TabRequests]?: TabRequests[K] }>({});
 
@@ -87,6 +88,11 @@ class Workspace {
 
 	constructor() {
 		this.reset();
+	}
+
+	openSettings(section: SettingsSection = 'general'): void {
+		this.settingsSection = section;
+		this.settingsOpen = true;
 	}
 
 	// ------------------------------------------------------------ lifecycle
@@ -347,9 +353,14 @@ class Workspace {
 	 */
 	pushBack(label: string, run: () => void, paneId: string | null = null): () => void {
 		const id = uid();
-		this.backStack.push({ id, label, paneId, run });
+		// Usually called from an effect; it must not subscribe to the stack it edits.
+		untrack(() => {
+			this.backStack = [...this.backStack, { id, label, paneId, run }];
+		});
 		return () => {
-			this.backStack = this.backStack.filter((e) => e.id !== id);
+			untrack(() => {
+				this.backStack = this.backStack.filter((e) => e.id !== id);
+			});
 		};
 	}
 

@@ -54,8 +54,7 @@ export function formatClock(ms: number): string {
 function toDate(value: Date | number | string | null | undefined): Date | null {
 	if (value == null || value === '') return null;
 	// Numbers below ~year 2001 in milliseconds are Unix seconds.
-	const date =
-		typeof value === 'number' ? new Date(value < 1e12 ? value * 1000 : value) : new Date(value);
+	const date = typeof value === 'number' ? new Date(value < 1e12 ? value * 1000 : value) : new Date(value);
 	return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -80,10 +79,7 @@ const DATE_ONLY = new Intl.DateTimeFormat(undefined, {
 	day: '2-digit'
 });
 
-export function formatDateTime(
-	value: Date | number | string | null | undefined,
-	seconds = false
-): string {
+export function formatDateTime(value: Date | number | string | null | undefined, seconds = false): string {
 	const date = toDate(value);
 	if (!date) return '—';
 	return (seconds ? DATE_TIME_SECONDS : DATE_TIME).format(date);

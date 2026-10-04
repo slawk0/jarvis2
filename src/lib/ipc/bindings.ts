@@ -73,6 +73,330 @@ export const commands = {
 	depsCheck: (tools: Tool[]) => __TAURI_INVOKE<DepsReport>("deps_check", { tools }),
 	/**  Install a tool as a streamed job; returns the job id. */
 	depsInstall: (tool: Tool) => __TAURI_INVOKE<string>("deps_install", { tool }),
+	statsBasic: () => __TAURI_INVOKE<BasicStats>("stats_basic"),
+	statsExtended: () => __TAURI_INVOKE<ExtendedStats>("stats_extended"),
+	processList: () => __TAURI_INVOKE<Process[]>("process_list"),
+	/**  Signal a process; elevates automatically when it belongs to someone else. */
+	processSignal: (pid: number, signal: ProcessSignal) => __TAURI_INVOKE<null>("process_signal", { pid, signal }),
+	processRenice: (pid: number, nice: number) => __TAURI_INVOKE<null>("process_renice", { pid, nice }),
+	terminalOpen: (target: TerminalTarget, cols: number, rows: number) => __TAURI_INVOKE<string>("terminal_open", { target, cols, rows }),
+	terminalWrite: (id: string, data: string) => __TAURI_INVOKE<null>("terminal_write", { id, data }),
+	terminalResize: (id: string, cols: number, rows: number) => __TAURI_INVOKE<null>("terminal_resize", { id, cols, rows }),
+	terminalClose: (id: string) => __TAURI_INVOKE<void>("terminal_close", { id }),
+	/**  Current directory of a host terminal's shell, if it can be determined. */
+	terminalCwd: (id: string) => __TAURI_INVOKE<string | null>("terminal_cwd", { id }),
+	/**  Open the operating system's terminal with an `ssh` session to this server. */
+	terminalOpenExternal: () => __TAURI_INVOKE<null>("terminal_open_external"),
+	filesList: (path: string) => __TAURI_INVOKE<Listing>("files_list", { path }),
+	/**  The connected user's home directory (where the file browser starts). */
+	filesHome: () => __TAURI_INVOKE<string>("files_home"),
+	/**
+	 *  Path completions for the remote path input: entries of the typed
+	 *  directory whose names start with the typed prefix.
+	 */
+	filesComplete: (input: string, dirsOnly: boolean) => __TAURI_INVOKE<string[]>("files_complete", { input, dirsOnly }),
+	filesRead: (path: string) => __TAURI_INVOKE<FileContent>("files_read", { path }),
+	filesWrite: (path: string, content: string) => __TAURI_INVOKE<boolean>("files_write", { path, content }),
+	filesCreate: (dir: string, name: string, directory: boolean) => __TAURI_INVOKE<boolean>("files_create", { dir, name, directory }),
+	filesRename: (path: string, newName: string) => __TAURI_INVOKE<boolean>("files_rename", { path, newName }),
+	/**  Move or copy items into a directory. */
+	filesTransfer: (paths: string[], destination: string, copy: boolean) => __TAURI_INVOKE<boolean>("files_transfer", { paths, destination, copy }),
+	/**  Copy an item next to itself under a new name. */
+	filesDuplicate: (path: string, newName: string) => __TAURI_INVOKE<boolean>("files_duplicate", { path, newName }),
+	filesDelete: (paths: string[]) => __TAURI_INVOKE<boolean>("files_delete", { paths }),
+	filesChmod: (paths: string[], mode: number, recursive: boolean) => __TAURI_INVOKE<boolean>("files_chmod", { paths, mode, recursive }),
+	filesChown: (paths: string[], owner: string, group: string, recursive: boolean) => __TAURI_INVOKE<boolean>("files_chown", { paths, owner, group, recursive }),
+	filesProperties: (path: string) => __TAURI_INVOKE<FileProperties>("files_properties", { path }),
+	/**  Recursive sizes (disk usage) of the given paths. */
+	filesSizes: (paths: string[]) => __TAURI_INVOKE<DirSize[]>("files_sizes", { paths }),
+	/**  Recursive case-insensitive name search below `root`. */
+	filesSearch: (root: string, query: string) => __TAURI_INVOKE<Listing>("files_search", { root, query }),
+	/**  Compress items of one directory into an archive in that directory. */
+	filesCompress: (dir: string, names: string[], archiveName: string, format: ArchiveFormat) => __TAURI_INVOKE<boolean>("files_compress", { dir, names, archiveName, format }),
+	/**  Extract an archive into the directory it is in. */
+	filesExtract: (path: string) => __TAURI_INVOKE<boolean>("files_extract", { path }),
+	/**  Queue a batch. Batches are appended to the queue, never rejected. */
+	transferEnqueue: (requests: TransferRequest[]) => __TAURI_INVOKE<string>("transfer_enqueue", { requests }),
+	/**  Which of the requested targets already exist (drives the conflict dialog). */
+	transferConflicts: (requests: TransferRequest[]) => __TAURI_INVOKE<string[]>("transfer_conflicts", { requests }),
+	transferList: () => __TAURI_INVOKE<TransferJob[]>("transfer_list"),
+	/**  Cancel one job, one batch, or (with neither) everything. */
+	transferCancel: (jobId: string | null, batchId: string | null) => __TAURI_INVOKE<void>("transfer_cancel", { jobId, batchId }),
+	/**  Put failed and cancelled jobs back in the queue (all of them, or the given ones). */
+	transferRetryFailed: (jobIds: string[] | null) => __TAURI_INVOKE<null>("transfer_retry_failed", { jobIds }),
+	transferClearCompleted: () => __TAURI_INVOKE<TransferJob[]>("transfer_clear_completed"),
+	/**  Run a runbook as a streamed job; returns the job id. */
+	runbookRun: (name: string, command: string, sudo: boolean) => __TAURI_INVOKE<string>("runbook_run", { name, command, sudo }),
+	servicesList: () => __TAURI_INVOKE<ServiceUnit[]>("services_list"),
+	/**  Start / stop / restart / reload / enable / disable any unit (service or timer). */
+	unitAction: (unit: string, action: UnitAction) => __TAURI_INVOKE<null>("unit_action", { unit, action }),
+	/**  `systemctl status` text (non-zero exit just means "not running"). */
+	unitStatus: (unit: string) => __TAURI_INVOKE<string>("unit_status", { unit }),
+	unitLogs: (unit: string, lines: number) => __TAURI_INVOKE<string>("unit_logs", { unit, lines }),
+	/**  Follow a unit's journal as a hidden streamed job. */
+	unitLogsFollow: (unit: string) => __TAURI_INVOKE<string>("unit_logs_follow", { unit }),
+	unitFile: (unit: string) => __TAURI_INVOKE<UnitFile>("unit_file", { unit }),
+	/**
+	 *  Save an edited unit file and reload systemd. Vendor units are not edited in
+	 *  place: the new content goes to `/etc/systemd/system`, which takes precedence.
+	 */
+	unitFileSave: (unit: string, content: string) => __TAURI_INVOKE<null>("unit_file_save", { unit, content }),
+	serviceCreate: (spec: ServiceSpec) => __TAURI_INVOKE<null>("service_create", { spec }),
+	timerCreate: (spec: TimerSpec) => __TAURI_INVOKE<null>("timer_create", { spec }),
+	/**  Delete a unit Jarvis created (a timer takes its service with it). */
+	unitDelete: (unit: string) => __TAURI_INVOKE<null>("unit_delete", { unit }),
+	timersList: () => __TAURI_INVOKE<TimerUnit[]>("timers_list"),
+	/**  Run a timer's service right now. */
+	timerRunNow: (timer: string) => __TAURI_INVOKE<null>("timer_run_now", { timer }),
+	/**  `systemctl status` plus `systemctl cat` for a timer and its service. */
+	timerInspect: (timer: string) => __TAURI_INVOKE<string>("timer_inspect", { timer }),
+	cronList: () => __TAURI_INVOKE<Crontab>("cron_list"),
+	/**  Root's crontab (read-only view). */
+	cronRoot: () => __TAURI_INVOKE<Crontab>("cron_root"),
+	/**  Files in `/etc/cron.d` (read-only view). */
+	cronSystemFiles: () => __TAURI_INVOKE<CronFile[]>("cron_system_files"),
+	cronAdd: (schedule: string, command: string) => __TAURI_INVOKE<null>("cron_add", { schedule, command }),
+	/**  The job is identified by its line plus the schedule/command the UI saw. */
+	cronUpdate: (job: CronJobRef, schedule: string, command: string) => __TAURI_INVOKE<null>("cron_update", { job, schedule, command }),
+	cronSetEnabled: (job: CronJobRef, enabled: boolean) => __TAURI_INVOKE<null>("cron_set_enabled", { job, enabled }),
+	cronDelete: (job: CronJobRef) => __TAURI_INVOKE<null>("cron_delete", { job }),
+	disksUsage: () => __TAURI_INVOKE<FsUsage[]>("disks_usage"),
+	disksDevices: () => __TAURI_INVOKE<BlockDevice[]>("disks_devices"),
+	diskMount: (devicePath: string, mountPoint: string, createDir: boolean) => __TAURI_INVOKE<null>("disk_mount", { devicePath, mountPoint, createDir }),
+	diskUnmount: (target: string) => __TAURI_INVOKE<null>("disk_unmount", { target }),
+	/**  Create a partition (optionally a new table first) and a filesystem on it. Streamed job. */
+	diskCreatePartition: (request: PartitionRequest) => __TAURI_INVOKE<string>("disk_create_partition", { request }),
+	/**  Grow a partition to fill its disk and then grow the filesystem. Streamed job. */
+	diskExpand: (partition: string) => __TAURI_INVOKE<string>("disk_expand", { partition }),
+	/**  Check a filesystem. A mounted filesystem is only inspected, never repaired. */
+	diskFsck: (devicePath: string) => __TAURI_INVOKE<string>("disk_fsck", { devicePath }),
+	maintenanceStatus: () => __TAURI_INVOKE<MaintenanceStatus>("maintenance_status"),
+	/**  Refresh the package index (streamed job). */
+	maintenanceRefresh: () => __TAURI_INVOKE<string>("maintenance_refresh"),
+	/**  Upgrade all packages (streamed job). */
+	maintenanceUpgrade: () => __TAURI_INVOKE<string>("maintenance_upgrade"),
+	/**  Turn automatic (security) updates on or off; installs the mechanism if needed. */
+	maintenanceAutoUpdates: (enable: boolean) => __TAURI_INVOKE<string>("maintenance_auto_updates", { enable }),
+	/**  Reboot the server. Returns before the connection drops. */
+	maintenanceReboot: () => __TAURI_INVOKE<null>("maintenance_reboot"),
+	packageSearch: (query: string) => __TAURI_INVOKE<PackageHit[]>("package_search", { query }),
+	/**  Install or remove a single package (streamed job). */
+	packageChange: (name: string, install: boolean) => __TAURI_INVOKE<string>("package_change", { name, install }),
+	accountsList: () => __TAURI_INVOKE<Accounts>("accounts_list"),
+	userCreate: (user: NewUser) => __TAURI_INVOKE<null>("user_create", { user }),
+	userDelete: (name: string, removeHome: boolean) => __TAURI_INVOKE<null>("user_delete", { name, removeHome }),
+	/**  Change a password. It travels on stdin to `chpasswd`, never on a command line. */
+	userSetPassword: (name: string, password: string) => __TAURI_INVOKE<null>("user_set_password", { name, password }),
+	userSetLocked: (name: string, locked: boolean) => __TAURI_INVOKE<null>("user_set_locked", { name, locked }),
+	/**
+	 *  Set a user's supplementary groups by adding and removing individual
+	 *  memberships, so nothing else about the account is touched.
+	 */
+	userSetGroups: (name: string, groups: string[]) => __TAURI_INVOKE<null>("user_set_groups", { name, groups }),
+	groupCreate: (name: string) => __TAURI_INVOKE<null>("group_create", { name }),
+	groupDelete: (name: string) => __TAURI_INVOKE<null>("group_delete", { name }),
+	/**  A user's `authorized_keys` (empty if the file does not exist). */
+	userKeysGet: (name: string) => __TAURI_INVOKE<string>("user_keys_get", { name }),
+	userKeysSet: (name: string, content: string) => __TAURI_INVOKE<null>("user_keys_set", { name, content }),
+	/**  The environment a login shell of the connected user gets. */
+	envHost: () => __TAURI_INVOKE<EnvVar[]>("env_host"),
+	/**  Environment of a Docker container (from its configuration). */
+	envContainer: (container: string) => __TAURI_INVOKE<EnvVar[]>("env_container", { container }),
+	/**  Persistent variables managed by Jarvis across the profile files. */
+	envManaged: () => __TAURI_INVOKE<ManagedVar[]>("env_managed"),
+	envSet: (file: EnvFile, key: string, value: string) => __TAURI_INVOKE<null>("env_set", { file, key, value }),
+	envRemove: (file: EnvFile, key: string) => __TAURI_INVOKE<null>("env_remove", { file, key }),
+	dockerOverview: () => __TAURI_INVOKE<DockerOverview>("docker_overview"),
+	dockerContainers: () => __TAURI_INVOKE<Container[]>("docker_containers"),
+	dockerContainerAction: (containers: string[], action: ContainerAction) => __TAURI_INVOKE<null>("docker_container_action", { containers, action }),
+	/**  Pretty-printed `docker inspect` JSON. */
+	dockerInspect: (kind: DockerObject, name: string) => __TAURI_INVOKE<string>("docker_inspect", { kind, name }),
+	dockerContainerDetail: (name: string) => __TAURI_INVOKE<ContainerDetail>("docker_container_detail", { name }),
+	dockerRename: (name: string, newName: string) => __TAURI_INVOKE<null>("docker_rename", { name, newName }),
+	dockerSetRestartPolicy: (name: string, policy: string) => __TAURI_INVOKE<null>("docker_set_restart_policy", { name, policy }),
+	/**  Connect a container to a network or disconnect it. */
+	dockerNetworkConnect: (container: string, network: string, connect: boolean) => __TAURI_INVOKE<null>("docker_network_connect", { container, network, connect }),
+	/**
+	 *  Recreate a container with new settings. The old container is renamed and
+	 *  stopped first, and restored if anything goes wrong. Streamed job.
+	 */
+	dockerRecreate: (name: string, spec: ContainerSpec) => __TAURI_INVOKE<string>("docker_recreate", { name, spec }),
+	/**  Follow a container's logs as a hidden streamed job. */
+	dockerLogsFollow: (name: string, tail: number) => __TAURI_INVOKE<string>("docker_logs_follow", { name, tail }),
+	/**
+	 *  Follow the Docker event stream as a hidden job, one `<type> <action>` line per event, so
+	 *  the UI notices changes made outside Jarvis (a terminal, another client).
+	 */
+	dockerEventsFollow: () => __TAURI_INVOKE<string>("docker_events_follow"),
+	/**  Run a one-off command (given by the user) inside a container. */
+	dockerExec: (name: string, command: string) => __TAURI_INVOKE<string>("docker_exec", { name, command }),
+	dockerImages: () => __TAURI_INVOKE<Image[]>("docker_images"),
+	dockerImageRemove: (images: string[], force: boolean) => __TAURI_INVOKE<null>("docker_image_remove", { images, force }),
+	/**  Pull an image with live progress (visible job). */
+	dockerImagePull: (image: string) => __TAURI_INVOKE<string>("docker_image_pull", { image }),
+	/**  Remove unused objects; returns docker's summary. */
+	dockerPrune: (target: PruneTarget) => __TAURI_INVOKE<string>("docker_prune", { target }),
+	dockerNetworks: () => __TAURI_INVOKE<Network[]>("docker_networks"),
+	dockerNetworkCreate: (name: string, driver: string) => __TAURI_INVOKE<null>("docker_network_create", { name, driver }),
+	dockerNetworkRemove: (networks: string[]) => __TAURI_INVOKE<null>("docker_network_remove", { networks }),
+	dockerVolumes: () => __TAURI_INVOKE<Volume[]>("docker_volumes"),
+	dockerVolumeRemove: (volumes: string[]) => __TAURI_INVOKE<null>("docker_volume_remove", { volumes }),
+	dockerStats: () => __TAURI_INVOKE<ContainerStats[]>("docker_stats"),
+	composeList: () => __TAURI_INVOKE<ComposeProject[]>("compose_list"),
+	/**  Run a compose action as a visible streamed job. */
+	composeAction: (name: string, configFile: string, action: ComposeAction) => __TAURI_INVOKE<string>("compose_action", { name, configFile, action }),
+	/**  Follow a project's logs as a hidden streamed job. */
+	composeLogs: (name: string, configFile: string) => __TAURI_INVOKE<string>("compose_logs", { name, configFile }),
+	/**  Validate a compose file with `docker compose config`; returns the error text, if any. */
+	composeValidate: (configFile: string) => __TAURI_INVOKE<string | null>("compose_validate", { configFile }),
+	/**  Stop listing a stack (its files and containers are left alone). */
+	composeForget: (configFile: string) => __TAURI_INVOKE<null>("compose_forget", { configFile }),
+	/**  Create a new project folder with a starter compose file. */
+	composeCreate: (directory: string, folder: string, content: string) => __TAURI_INVOKE<string>("compose_create", { directory, folder, content }),
+	/**  Listening sockets. With `elevated`, root is used so processes of other users are named. */
+	networkListening: (elevated: boolean) => __TAURI_INVOKE<Listener[]>("network_listening", { elevated }),
+	networkConnections: () => __TAURI_INVOKE<Connection[]>("network_connections"),
+	networkInterfaces: () => __TAURI_INVOKE<Interface[]>("network_interfaces"),
+	/**  Run a diagnostic from the server as a hidden streamed job. */
+	netdiagRun: (diagnostic: Diagnostic, target: string) => __TAURI_INVOKE<string>("netdiag_run", { diagnostic, target }),
+	/**
+	 *  Geolocation of an IP address. This request is made from the desktop
+	 *  (to ipapi.co), not from the server.
+	 */
+	ipInfo: (ip: string) => __TAURI_INVOKE<IpInfo>("ip_info", { ip }),
+	firewallDetect: () => __TAURI_INVOKE<FirewallBackends>("firewall_detect"),
+	ufwStatus: () => __TAURI_INVOKE<UfwStatus>("ufw_status"),
+	/**  Enable or disable UFW. `allow_port` adds an allow rule first (keep SSH reachable). */
+	ufwSetEnabled: (enable: boolean, allowPort: number | null) => __TAURI_INVOKE<null>("ufw_set_enabled", { enable, allowPort }),
+	ufwAddRule: (spec: UfwRuleSpec) => __TAURI_INVOKE<null>("ufw_add_rule", { spec }),
+	/**
+	 *  Delete a rule by its number. Numbers shift after every delete, so the
+	 *  caller re-reads the list before deleting another one.
+	 */
+	ufwDeleteRule: (number: number) => __TAURI_INVOKE<null>("ufw_delete_rule", { number }),
+	iptablesList: (tableName: string) => __TAURI_INVOKE<IptTable>("iptables_list", { tableName }),
+	iptablesAddRule: (spec: IptRuleSpec) => __TAURI_INVOKE<null>("iptables_add_rule", { spec }),
+	iptablesDeleteRule: (tableName: string, chainName: string, number: number) => __TAURI_INVOKE<null>("iptables_delete_rule", { tableName, chainName, number }),
+	iptablesSetPolicy: (tableName: string, chainName: string, policy: string) => __TAURI_INVOKE<null>("iptables_set_policy", { tableName, chainName, policy }),
+	/**  Save the current rules so they survive a reboot. Returns where they went. */
+	iptablesPersist: () => __TAURI_INVOKE<string>("iptables_persist"),
+	/**  Detect CrowdSec and test the connection (`cscli version`). */
+	crowdsecStatus: () => __TAURI_INVOKE<CrowdsecStatus>("crowdsec_status"),
+	crowdsecDecisions: () => __TAURI_INVOKE<Decision[]>("crowdsec_decisions"),
+	crowdsecBan: (request: BanRequest) => __TAURI_INVOKE<null>("crowdsec_ban", { request }),
+	/**  Remove one decision by id, or all of them when `id` is `None`. */
+	crowdsecUnban: (id: string | null) => __TAURI_INVOKE<null>("crowdsec_unban", { id }),
+	crowdsecAlerts: () => __TAURI_INVOKE<Alert[]>("crowdsec_alerts"),
+	/**  Full alert as pretty-printed JSON (events, decisions, metadata). */
+	crowdsecAlertDetail: (id: string) => __TAURI_INVOKE<string>("crowdsec_alert_detail", { id }),
+	crowdsecBouncers: () => __TAURI_INVOKE<Bouncer[]>("crowdsec_bouncers"),
+	/**  Register a bouncer; returns its API key (shown once). */
+	crowdsecBouncerAdd: (name: string) => __TAURI_INVOKE<string>("crowdsec_bouncer_add", { name }),
+	crowdsecBouncerDelete: (name: string) => __TAURI_INVOKE<null>("crowdsec_bouncer_delete", { name }),
+	/**  Remove bouncers that have not pulled for a long time. */
+	crowdsecBouncersPrune: () => __TAURI_INVOKE<string>("crowdsec_bouncers_prune"),
+	crowdsecMetrics: () => __TAURI_INVOKE<Acquisition[]>("crowdsec_metrics"),
+	/**  Last lines of an acquisition source that is a file. */
+	crowdsecSourceTail: (source: string, lines: number) => __TAURI_INVOKE<string>("crowdsec_source_tail", { source, lines }),
+	crowdsecHub: () => __TAURI_INVOKE<HubItem[]>("crowdsec_hub"),
+	crowdsecHubAction: (kind: string, name: string, action: HubAction) => __TAURI_INVOKE<string>("crowdsec_hub_action", { kind, name, action }),
+	crowdsecHubUpdate: () => __TAURI_INVOKE<string>("crowdsec_hub_update"),
+	crowdsecWhitelists: () => __TAURI_INVOKE<Whitelists>("crowdsec_whitelists"),
+	/**  Replace the Jarvis-managed whitelist with these entries and reload CrowdSec. */
+	crowdsecWhitelistSave: (ips: string[], cidrs: string[]) => __TAURI_INVOKE<null>("crowdsec_whitelist_save", { ips, cidrs }),
+	/**  Add or remove a value in a LAPI allowlist. */
+	crowdsecAllowlistEdit: (name: string, value: string, add: boolean) => __TAURI_INVOKE<null>("crowdsec_allowlist_edit", { name, value, add }),
+	nginxHosts: (target: NginxTarget) => __TAURI_INVOKE<ProxyHost[]>("nginx_hosts", { target }),
+	nginxHostSave: (target: NginxTarget, host: ProxyHost) => __TAURI_INVOKE<null>("nginx_host_save", { target, host }),
+	nginxHostDelete: (target: NginxTarget, id: string) => __TAURI_INVOKE<null>("nginx_host_delete", { target, id }),
+	nginxCertificates: (target: NginxTarget) => __TAURI_INVOKE<Certificate[]>("nginx_certificates", { target }),
+	/**  Request a new certificate (streamed job). */
+	nginxCertIssue: (target: NginxTarget, request: IssueRequest) => __TAURI_INVOKE<string>("nginx_cert_issue", { target, request }),
+	/**  Renew / dry-run / delete certificates (streamed job). */
+	nginxCertAction: (target: NginxTarget, action: CertAction) => __TAURI_INVOKE<string>("nginx_cert_action", { target, action }),
+	/**  Config files under the nginx root that can be edited. */
+	nginxFiles: (target: NginxTarget) => __TAURI_INVOKE<string[]>("nginx_files", { target }),
+	nginxFileRead: (target: NginxTarget, path: string) => __TAURI_INVOKE<string>("nginx_file_read", { target, path }),
+	/**  Save a config file, test and reload. A failed test restores the old content. */
+	nginxFileWrite: (target: NginxTarget, path: string, content: string) => __TAURI_INVOKE<null>("nginx_file_write", { target, path, content }),
+	nginxControl: (target: NginxTarget, action: NginxControl) => __TAURI_INVOKE<ControlResult>("nginx_control", { target, action }),
+	logsSources: () => __TAURI_INVOKE<LogSourceInfo[]>("logs_sources"),
+	/**  Follow a log as a hidden streamed job. Uses sudo when the user cannot read it. */
+	logsFollow: (query: LogQuery, lines: number) => __TAURI_INVOKE<string>("logs_follow", { query, lines }),
+	sessionsList: () => __TAURI_INVOKE<Sessions>("sessions_list"),
+	/**  Failed login attempts (`lastb`, root only). */
+	sessionsFailed: () => __TAURI_INVOKE<LoginRecord[]>("sessions_failed"),
+	/**  End another user's login session by killing everything on its terminal. */
+	sessionKick: (tty: string) => __TAURI_INVOKE<null>("session_kick", { tty }),
+	logAnalyze: (source: AnalysisSource, lines: number) => __TAURI_INVOKE<LogAnalysis>("log_analyze", { source, lines }),
+	dbProfiles: () => __TAURI_INVOKE<DbProfile[]>("db_profiles"),
+	/**  Create or update a connection profile. `password = None` keeps the stored one. */
+	dbProfileSave: (profile: DbProfile, password: string | null) => __TAURI_INVOKE<DbProfile>("db_profile_save", { profile, password }),
+	dbProfileDelete: (id: string) => __TAURI_INVOKE<null>("db_profile_delete", { id }),
+	dbDetect: (container: string) => __TAURI_INVOKE<DetectedDb>("db_detect", { container }),
+	dbConnect: (id: string) => __TAURI_INVOKE<null>("db_connect", { id }),
+	dbDisconnect: (id: string) => __TAURI_INVOKE<null>("db_disconnect", { id }),
+	/**  Ids of the profiles that are currently connected. */
+	dbConnected: () => __TAURI_INVOKE<string[]>("db_connected"),
+	dbDatabases: (id: string) => __TAURI_INVOKE<string[]>("db_databases", { id }),
+	/**  Schemas of a PostgreSQL database (empty for MySQL). */
+	dbSchemas: (id: string, database: string) => __TAURI_INVOKE<string[]>("db_schemas", { id, database }),
+	dbTables: (id: string, database: string, schema: string) => __TAURI_INVOKE<TableInfo[]>("db_tables", { id, database, schema }),
+	dbTableStructure: (id: string, table: TableRef) => __TAURI_INVOKE<TableStructure>("db_table_structure", { id, table }),
+	dbTableData: (id: string, request: PageRequest) => __TAURI_INVOKE<DataPage>("db_table_data", { id, request }),
+	dbRowInsert: (id: string, table: TableRef, values: ([string, string | null])[]) => __TAURI_INVOKE<null>("db_row_insert", { id, table, values }),
+	/**  Update one row. Returns the number of rows changed (0 if it no longer matches). */
+	dbRowUpdate: (id: string, table: TableRef, key: ([string, string | null])[], changes: ([string, string | null])[]) => __TAURI_INVOKE<number>("db_row_update", { id, table, key, changes }),
+	/**  Delete rows in one transaction: either all of them go, or none. */
+	dbRowsDelete: (id: string, table: TableRef, keys: (([string, string | null])[])[]) => __TAURI_INVOKE<number>("db_rows_delete", { id, table, keys }),
+	/**  Export a whole table (with the current filters) to a local file. Returns the row count. */
+	dbExportTable: (id: string, table: TableRef, filters: Filter[], format: ExportFormat, path: string) => __TAURI_INVOKE<number>("db_export_table", { id, table, filters, format, path }),
+	/**  Run a script statement by statement. Execution stops at the first error. */
+	dbQuery: (id: string, database: string, script: string) => __TAURI_INVOKE<StatementResult[]>("db_query", { id, database, script }),
+	resticRepos: () => __TAURI_INVOKE<ResticRepo[]>("restic_repos"),
+	resticRepoSave: (repo: ResticRepo, secrets: ResticSecrets) => __TAURI_INVOKE<ResticRepo>("restic_repo_save", { repo, secrets }),
+	/**  Remove a repository's saved configuration and secrets. The data is not touched. */
+	resticRepoDelete: (id: string) => __TAURI_INVOKE<null>("restic_repo_delete", { id }),
+	/**  Remotes configured for rclone on the server. */
+	resticRcloneRemotes: (sudo: boolean) => __TAURI_INVOKE<string[]>("restic_rclone_remotes", { sudo }),
+	resticStatus: (id: string) => __TAURI_INVOKE<RepoStatus>("restic_status", { id }),
+	resticInit: (id: string) => __TAURI_INVOKE<string>("restic_init", { id }),
+	resticBackup: (id: string, paths: string[], tags: string[], excludes: string[]) => __TAURI_INVOKE<string>("restic_backup", { id, paths, tags, excludes }),
+	resticMaintenance: (id: string, action: ResticMaintenance) => __TAURI_INVOKE<string>("restic_maintenance", { id, action }),
+	resticStats: (id: string) => __TAURI_INVOKE<RepoStats>("restic_stats", { id }),
+	resticSnapshots: (id: string) => __TAURI_INVOKE<Snapshot[]>("restic_snapshots", { id }),
+	resticRestore: (id: string, snapshot: string, target: string) => __TAURI_INVOKE<string>("restic_restore", { id, snapshot, target }),
+	/**  Forget specific snapshots and prune their data. */
+	resticForget: (id: string, snapshots: string[]) => __TAURI_INVOKE<string>("restic_forget", { id, snapshots }),
+	/**  Apply a retention policy (optionally as a dry run that changes nothing). */
+	resticForgetPolicy: (id: string, policy: KeepPolicy, dryRun: boolean) => __TAURI_INVOKE<string>("restic_forget_policy", { id, policy, dryRun }),
+	resticLs: (id: string, snapshot: string, path: string) => __TAURI_INVOKE<SnapshotNode[]>("restic_ls", { id, snapshot, path }),
+	/**  Find files by name pattern within one snapshot. */
+	resticFind: (id: string, snapshot: string, pattern: string) => __TAURI_INVOKE<SnapshotNode[]>("restic_find", { id, snapshot, pattern }),
+	/**  Text preview of a file inside a snapshot (size-limited, binary refused). */
+	resticPreview: (id: string, snapshot: string, path: string, size: number) => __TAURI_INVOKE<string>("restic_preview", { id, snapshot, path, size }),
+	/**
+	 *  Download a file (or a folder, as a tar archive) from a snapshot to this
+	 *  computer: restic writes it to a temporary file on the server, the transfer
+	 *  engine fetches it and removes the temporary file afterwards.
+	 */
+	resticDownload: (id: string, snapshot: string, path: string, dir: boolean, localDir: string) => __TAURI_INVOKE<null>("restic_download", { id, snapshot, path, dir, localDir }),
+	backupTemplates: () => __TAURI_INVOKE<BackupTemplate[]>("backup_templates"),
+	backupTemplateSave: (template: BackupTemplate, secrets: BackupSecrets) => __TAURI_INVOKE<BackupTemplate>("backup_template_save", { template, secrets }),
+	backupTemplateDelete: (id: string) => __TAURI_INVOKE<null>("backup_template_delete", { id }),
+	/**  Pause or resume a schedule (the installed script stays in place). */
+	backupSetPaused: (id: string, paused: boolean) => __TAURI_INVOKE<null>("backup_set_paused", { id, paused }),
+	/**  Run a backup now as a streamed job. `local_dir` is required for download destinations. */
+	backupRun: (id: string, localDir: string | null) => __TAURI_INVOKE<string>("backup_run", { id, localDir }),
+	/**  State of an installed schedule with the tail of its log. */
+	backupScheduleInfo: (id: string, lines: number) => __TAURI_INVOKE<ScheduleInfo>("backup_schedule_info", { id, lines }),
+	/**  Proxy one request to the Pangolin API and return the response body (JSON text). */
+	pangolinRequest: (method: HttpMethod, path: string, query: ([string, string])[], body: string | null) => __TAURI_INVOKE<string>("pangolin_request", { method, path, query, body }),
+	pangolinStatus: () => __TAURI_INVOKE<PangolinStatus>("pangolin_status"),
+	/**  Save the connection settings and verify them. `api_key = None` keeps the stored key. */
+	pangolinConfigure: (apiUrl: string, apiKey: string | null, orgId: string) => __TAURI_INVOKE<PangolinVerify>("pangolin_configure", { apiUrl, apiKey, orgId }),
+	/**  Forget the stored API key. */
+	pangolinClear: () => __TAURI_INVOKE<null>("pangolin_clear"),
 };
 
 /** Events */
@@ -81,9 +405,52 @@ export const events = {
 	jobDone: makeEvent<JobDone>("job-done"),
 	jobOutput: makeEvent<JobOutput>("job-output"),
 	jobStarted: makeEvent<JobStarted>("job-started"),
+	terminalData: makeEvent<TerminalData>("terminal-data"),
+	terminalExit: makeEvent<TerminalExit>("terminal-exit"),
+	transferBatchDone: makeEvent<TransferBatchDone>("transfer-batch-done"),
+	transferUpdate: makeEvent<TransferUpdate>("transfer-update"),
 };
 
 /* Types */
+export type Accounts = {
+	users: User[],
+	groups: Group[],
+	/**  The user Jarvis is connected as (cannot be deleted). */
+	currentUser: string,
+	shells: string[],
+};
+
+export type Acquisition = {
+	/**  e.g. `file:/var/log/nginx/access.log`. */
+	source: string,
+	read: number,
+	parsed: number,
+	unparsed: number,
+};
+
+export type Alert = {
+	id: string,
+	createdAt: string,
+	scenario: string,
+	source: string,
+	country: string,
+	asName: string,
+	events: number,
+	message: string,
+};
+
+export type Allowlist = {
+	name: string,
+	description: string,
+	items: string[],
+};
+
+export type AnalysisSource = {
+	target: ExecTarget,
+	/**  Access-log path; empty reads `docker logs` of the container instead. */
+	logPath: string,
+};
+
 export type AppError = {
 	code: ErrorCode,
 	details: string | null,
@@ -102,11 +469,158 @@ export type AppSettings = {
 	pangolin: PangolinSettings,
 };
 
+export type ArchiveFormat = "tarGz" | "zip";
+
 export type AuthType = "password" | "key";
+
+export type AutoUpdates = "enabled" | "disabled" | 
+/**  The mechanism for this distribution is not installed (enabling installs it). */
+"notInstalled" | "unsupported";
+
+/**  Secret values sent when saving a template. `None` keeps what is stored. */
+export type BackupSecrets = {
+	dbPassword: string | null,
+	s3AccessKey: string | null,
+	s3SecretKey: string | null,
+	sftpPassword: string | null,
+};
+
+export type BackupTemplate = {
+	id: string,
+	name: string,
+	/**  `files`, `mysql` or `postgres`. */
+	kind: string,
+	/**  Files: the file or directory to archive. */
+	path: string,
+	/**  Databases: `host` or `container`. */
+	dbSource: string,
+	dbHost: string,
+	dbPort: number,
+	dbContainer: string,
+	dbName: string,
+	dbUser: string,
+	/**  `download`, `folder`, `s3`, `sftp` or `restic`. */
+	destination: string,
+	folder: string,
+	s3Endpoint: string,
+	s3Region: string,
+	s3Bucket: string,
+	s3Prefix: string,
+	sftpHost: string,
+	sftpPort: number,
+	sftpUser: string,
+	sftpPath: string,
+	resticRepo: string,
+	/**  Cron expression; empty for manual-only templates. */
+	schedule: string,
+	paused: boolean,
+	/**  Run the manual backup as root (scheduled runs always are). */
+	sudo: boolean,
+	/**  Delete archives older than this many days (0 keeps everything). */
+	keepDays: number,
+	/**  Retention for restic destinations. */
+	keep: KeepPolicy,
+};
+
+export type BanRequest = {
+	/**  `ip` or `range`. */
+	scope: string,
+	value: string,
+	duration: string,
+	reason: string,
+};
+
+export type BasicStats = {
+	/**  Jiffies since boot, all CPUs: total and idle (idle + iowait). */
+	cpuTotal: number,
+	cpuIdle: number,
+	cpuCount: number,
+	memTotal: number,
+	memAvailable: number,
+	swapTotal: number,
+	swapFree: number,
+	load: [number, number, number],
+	uptimeSecs: number,
+	/**  Interface carrying the default route (empty if none was found). */
+	netInterface: string,
+	netRxBytes: number,
+	netTxBytes: number,
+	rootTotal: number,
+	rootUsed: number,
+};
+
+export type Bell = "none" | "visual" | "sound";
+
+export type BlockDevice = {
+	name: string,
+	path: string,
+	/**  Name of the parent device, `None` for whole disks. */
+	parent: string | null,
+	depth: number,
+	/**  `disk`, `part`, `lvm`, `loop`, `rom`, `crypt`, `raid1`… */
+	kind: string,
+	size: number,
+	model: string,
+	fsType: string,
+	mount: string,
+	label: string,
+	uuid: string,
+	partitionTable: string,
+	readOnly: boolean,
+};
+
+export type Bouncer = {
+	name: string,
+	ip: string,
+	kind: string,
+	version: string,
+	lastPull: string,
+	revoked: boolean,
+};
+
+export type CertAction = { action: "renew"; name: string; force: boolean } | { action: "renewAll" } | { action: "dryRun" } | { action: "delete"; name: string };
+
+export type Certificate = {
+	name: string,
+	domains: string[],
+	/**  As printed by certbot, e.g. `2026-12-01 10:00:00+00:00`. */
+	expiry: string,
+	/**  Negative when already expired; `None` if certbot did not say. */
+	daysLeft: number | null,
+	path: string,
+};
+
+export type ColumnInfo = {
+	name: string,
+	dataType: string,
+	nullable: boolean,
+	default: string | null,
+	/**  `PRI`, `UNI`, `MUL` or empty. */
+	key: string,
+	extra: string,
+};
+
+export type ComposeAction = "up" | "down" | "restart" | "pull";
+
+export type ComposeProject = {
+	name: string,
+	/**  e.g. "running(2)", "exited(1)"; empty when the stack is down. */
+	status: string,
+	configFile: string,
+	running: boolean,
+};
+
+export type ConflictPolicy = "overwrite" | "skip" | "rename";
 
 export type ConnectOutcome = { status: "connected"; session: SessionInfo } | 
 /**  The server's host key needs a decision before connecting. */
 { status: "hostKey"; issue: HostKeyIssue };
+
+export type Connection = {
+	state: string,
+	local: string,
+	remote: string,
+};
 
 export type ConnectionStatus = {
 	profileId: string,
@@ -115,14 +629,321 @@ export type ConnectionStatus = {
 	error: AppError | null,
 };
 
+export type Container = {
+	id: string,
+	name: string,
+	image: string,
+	/**  `running`, `exited`, `paused`, `created`, `restarting`, `dead`. */
+	state: string,
+	/**  Human status, e.g. "Up 3 hours (healthy)". */
+	status: string,
+	ports: string,
+	created: string,
+	/**  Compose project this container belongs to, if any. */
+	composeProject: string,
+};
+
+export type ContainerAction = "start" | "stop" | "restart" | "kill" | "pause" | "unpause" | "remove";
+
+export type ContainerDetail = {
+	id: string,
+	name: string,
+	image: string,
+	state: string,
+	created: string,
+	started: string,
+	command: string[],
+	/**  `command` as one shell-quoted line, as the edit form shows it. */
+	commandLine: string,
+	entrypoint: string[],
+	workingDir: string,
+	user: string,
+	hostname: string,
+	tty: boolean,
+	interactive: boolean,
+	restartPolicy: string,
+	env: ([string, string])[],
+	labels: ([string, string])[],
+	ports: PortMapping[],
+	mounts: Mount[],
+	networks: NetworkAttachment[],
+	networkMode: string,
+	dns: string[],
+	logDriver: string,
+	logOptions: ([string, string])[],
+	/**  Bytes; 0 means unlimited. */
+	memory: number,
+	memoryReservation: number,
+	/**  CPU limit in units of 1e-9 CPUs; 0 means unlimited. */
+	nanoCpus: number,
+	shmSize: number,
+	privileged: boolean,
+	capAdd: string[],
+	capDrop: string[],
+	/**  Non-empty when the container is managed by Docker Compose. */
+	composeProject: string,
+};
+
+/**  Everything the "edit container" form can change. */
+export type ContainerSpec = {
+	name: string,
+	image: string,
+	/**  Command line, split like a shell would (quotes allowed). Empty keeps the image default. */
+	command: string,
+	/**  Entrypoint override; empty keeps the image default. */
+	entrypoint: string,
+	workingDir: string,
+	user: string,
+	hostname: string,
+	tty: boolean,
+	interactive: boolean,
+	restartPolicy: string,
+	env: ([string, string])[],
+	labels: ([string, string])[],
+	ports: PortMapping[],
+	mounts: Mount[],
+	/**  Primary network (name, or `bridge` / `host` / `none`). */
+	network: string,
+	extraNetworks: string[],
+	dns: string[],
+	logDriver: string,
+	logOptions: ([string, string])[],
+	/**  Docker size strings such as `512m`; empty means unlimited/default. */
+	memory: string,
+	memoryReservation: string,
+	cpus: string,
+	shmSize: string,
+	privileged: boolean,
+	capAdd: string[],
+	capDrop: string[],
+};
+
+export type ContainerStats = {
+	id: string,
+	name: string,
+	cpuPercent: number,
+	memPercent: number,
+	memUsed: number,
+	memLimit: number,
+	netRx: number,
+	netTx: number,
+	blockRead: number,
+	blockWrite: number,
+	pids: number,
+};
+
+export type ControlResult = {
+	ok: boolean,
+	output: string,
+};
+
+export type Count = {
+	key: string,
+	count: number,
+};
+
+export type CronFile = {
+	path: string,
+	content: string,
+};
+
+export type CronJob = {
+	/**  Zero-based line number in the crontab. */
+	line: number,
+	enabled: boolean,
+	schedule: string,
+	command: string,
+	/**  Inside a block managed by Jarvis Backups (read-only here). */
+	managed: boolean,
+};
+
+export type CronJobRef = {
+	line: number,
+	schedule: string,
+	command: string,
+};
+
+export type Crontab = {
+	jobs: CronJob[],
+	/**  The full text, for the raw view. */
+	raw: string,
+};
+
+export type CrowdsecStatus = {
+	installed: boolean,
+	/**  `native`, `docker` or `custom`. */
+	mode: string,
+	container: string,
+	version: string,
+	/**  `None` when not a systemd-managed native install. */
+	serviceActive: boolean | null,
+};
+
+export type CursorStyle = "block" | "bar" | "underline";
+
 export type DataKey = "runbooks" | "savedCommands" | "sftpBookmarks" | "backupTemplates" | "resticRepos" | "alertThresholds" | "dbConnections" | "nginxTargets" | "logAnalysisProfiles" | "logSources" | "crowdsecConfig" | "composeStacks" | "workspaceLayout";
+
+export type DataPage = {
+	columns: ColumnInfo[],
+	rows: ((string | null)[])[],
+	total: number,
+	/**  Primary-key column names; empty means rows are matched on all columns. */
+	primaryKey: string[],
+};
+
+/**  A saved database connection (the password lives in the keyring). */
+export type DbProfile = {
+	id: string,
+	name: string,
+	engine: Engine,
+	/**  `host` (reach `host:port` from the server) or `container`. */
+	source: string,
+	host: string,
+	port: number,
+	container: string,
+	user: string,
+	/**  Default database (required for PostgreSQL logins). */
+	database: string,
+};
+
+export type Decision = {
+	id: string,
+	value: string,
+	scope: string,
+	/**  `ban`, `captcha`, … */
+	kind: string,
+	origin: string,
+	reason: string,
+	country: string,
+	asName: string,
+	duration: string,
+	until: string,
+};
 
 export type DepsReport = {
 	packageManager: PackageManager | null,
 	tools: ToolStatus[],
 };
 
+export type DetectedDb = {
+	engine: Engine | null,
+	user: string,
+	password: string,
+	database: string,
+	port: number,
+};
+
+export type Diagnostic = { tool: "ping" } | { tool: "traceroute" } | { tool: "dns"; record: string } | { tool: "http" } | { tool: "mtr" } | { tool: "port"; port: number };
+
+export type DirSize = {
+	path: string,
+	bytes: number,
+};
+
+export type DockerObject = "container" | "image" | "network" | "volume";
+
+export type DockerOverview = {
+	running: number,
+	stopped: number,
+	images: number,
+	networks: number,
+	volumes: number,
+	version: string,
+};
+
+export type Engine = "mysql" | "postgres";
+
+export type EnvFile = "bashrc" | "profile" | "bashProfile" | 
+/**  `/etc/environment` (system-wide, needs root). */
+"environment";
+
+export type EnvVar = {
+	key: string,
+	value: string,
+};
+
 export type ErrorCode = "NOT_CONNECTED" | "CONNECTION_FAILED" | "CONNECTION_LOST" | "AUTH_FAILED" | "HOST_KEY_UNKNOWN" | "HOST_KEY_CHANGED" | "KEY_FILE_INVALID" | "KEY_PASSPHRASE_REQUIRED" | "KEY_PASSPHRASE_WRONG" | "TIMEOUT" | "CANCELLED" | "SUDO_PASSWORD_REQUIRED" | "SUDO_PASSWORD_EXPIRED" | "SUDO_PASSWORD_WRONG" | "SUDO_LOCKED" | "SUDO_UNAVAILABLE" | "PERMISSION_DENIED" | "NOT_FOUND" | "ALREADY_EXISTS" | "INVALID_INPUT" | "COMMAND_FAILED" | "PARSE_FAILED" | "DEPENDENCY_MISSING" | "UNSUPPORTED" | "IO" | "STORE_CORRUPT" | "KEYRING" | "SFTP" | "TRANSFER_FAILED" | "FILE_TOO_LARGE" | "BINARY_FILE" | "DATABASE" | "DB_NOT_CONNECTED" | "HTTP" | "PANGOLIN_NOT_CONFIGURED" | "PANGOLIN_UNAUTHORIZED" | "CONFIG_TEST_FAILED" | "INTERNAL";
+
+/**  Where a tool runs: directly on the host or inside a Docker container. */
+export type ExecTarget = { kind: "host" } | { kind: "container"; container: string };
+
+export type ExportFormat = "csv" | "json";
+
+export type ExtendedStats = {
+	system: SystemInfo,
+	partitions: Partition[],
+	/**  Top processes by memory. */
+	topProcesses: Process[],
+};
+
+export type FileContent = {
+	path: string,
+	content: string,
+	/**  The file could only be read as root; saving will need root too. */
+	elevated: boolean,
+	size: number,
+};
+
+export type FileEntry = {
+	name: string,
+	/**  Full path; only differs from `dir + name` in search results. */
+	path: string,
+	kind: FileKind,
+	/**  For symlinks: whether the link points at a directory. */
+	isDirLike: boolean,
+	size: number,
+	/**  Permission bits (lower 12 bits of the mode). */
+	mode: number,
+	owner: string,
+	group: string,
+	/**  Modification time, Unix seconds. */
+	modified: number,
+};
+
+export type FileKind = "file" | "dir" | "symlink" | "other";
+
+export type FileProperties = {
+	entry: FileEntry,
+	linkTarget: string | null,
+	mime: string | null,
+};
+
+export type Filter = {
+	column: string,
+	/**  One of `=`, `!=`, `<`, `>`, `<=`, `>=`, `LIKE`, `IS NULL`, `IS NOT NULL`. */
+	operator: string,
+	value: string,
+};
+
+export type FirewallBackends = {
+	ufw: boolean,
+	iptables: boolean,
+	/**  Present but not managed by Jarvis. */
+	nftables: boolean,
+	firewalld: boolean,
+	/**  The SSH port of this connection (for lock-out warnings). */
+	sshPort: number,
+};
+
+export type FsUsage = {
+	device: string,
+	fsType: string,
+	mount: string,
+	total: number,
+	used: number,
+	available: number,
+	usePercent: number,
+	/**  tmpfs, overlay and other virtual filesystems. */
+	system: boolean,
+	isLoop: boolean,
+};
+
+export type Group = {
+	name: string,
+	gid: number,
+	/**  Explicit members plus users whose primary group this is. */
+	members: string[],
+};
 
 /**  Why a server's host key was not accepted, with what the user needs to decide. */
 export type HostKeyIssue = {
@@ -134,6 +955,103 @@ export type HostKeyIssue = {
 	knownFingerprints: string[],
 	/**  The offered key in OpenSSH format, passed back to trust it. */
 	key: string,
+};
+
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+export type HubAction = "install" | "upgrade" | "remove";
+
+export type HubItem = {
+	/**  `collections`, `parsers`, `scenarios` or `postoverflows`. */
+	kind: string,
+	name: string,
+	status: string,
+	localVersion: string,
+	description: string,
+	installed: boolean,
+};
+
+export type Image = {
+	id: string,
+	repository: string,
+	tag: string,
+	size: string,
+	created: string,
+	/**  No container (running or stopped) uses this image. */
+	unused: boolean,
+};
+
+export type Interface = {
+	name: string,
+	addresses: string[],
+};
+
+export type IpInfo = {
+	ip: string,
+	country: string,
+	countryCode: string,
+	region: string,
+	city: string,
+	postal: string,
+	org: string,
+	asn: string,
+	timezone: string,
+	latitude: string,
+	longitude: string,
+	/**  The service the data came from. */
+	provider: string,
+};
+
+export type IptChain = {
+	name: string,
+	/**  Built-in chains have a policy; user chains do not. */
+	policy: string | null,
+	rules: IptRule[],
+};
+
+export type IptPosition = { kind: "append" } | 
+/**  Insert at the top of the chain. */
+{ kind: "insert" } | 
+/**  Insert at a specific rule number. */
+{ kind: "line"; number: number };
+
+export type IptRule = {
+	number: number,
+	target: string,
+	protocol: string,
+	source: string,
+	destination: string,
+	/**  Remaining match details (ports, states, comments…). */
+	extra: string,
+};
+
+export type IptRuleSpec = {
+	table: string,
+	chain: string,
+	/**  `ACCEPT`, `DROP` or `REJECT`. */
+	target: string,
+	/**  `all`, `tcp`, `udp` or `icmp`. */
+	protocol: string,
+	source: string,
+	destination: string,
+	/**  Destination port or range; only with TCP or UDP. */
+	port: string,
+	position: IptPosition,
+};
+
+export type IptTable = {
+	chains: IptChain[],
+	raw: string,
+};
+
+export type IssueMethod = 
+/**  certbot's nginx plugin (edits nothing: `certonly`). */
+{ method: "nginx" } | { method: "webroot"; path: string } | { method: "standalone" } | { method: "dnsCloudflare" } | { method: "dnsDigitalocean" } | { method: "dnsRoute53" };
+
+export type IssueRequest = {
+	domains: string[],
+	email: string,
+	method: IssueMethod,
 };
 
 export type JobDone = {
@@ -162,6 +1080,13 @@ export type JobStarted = {
 
 export type JobStream = "stdout" | "stderr";
 
+export type KeepPolicy = {
+	last: number,
+	daily: number,
+	weekly: number,
+	monthly: number,
+};
+
 export type KnownHost = {
 	host: string,
 	port: number,
@@ -171,12 +1096,211 @@ export type KnownHost = {
 
 export type LinkState = "online" | "offline" | "reconnecting";
 
+export type Listener = {
+	protocol: string,
+	address: string,
+	port: string,
+	/**  Empty when the owning process is not visible without root. */
+	process: string,
+	pid: number | null,
+};
+
+export type Listing = {
+	path: string,
+	entries: FileEntry[],
+	/**  The listing needed root. */
+	elevated: boolean,
+	truncated: boolean,
+};
+
+export type LogAnalysis = {
+	total: number,
+	statuses: Count[],
+	methods: Count[],
+	topIps: Count[],
+	topPaths: Count[],
+	topAgents: Count[],
+	/**  Requests per hour in chronological order; key is `YYYY-MM-DD HH:00`. */
+	perHour: Count[],
+};
+
+export type LogQuery = 
+/**  The journal, optionally limited to one unit and/or a minimum priority. */
+{ kind: "journal"; unit: string; priority: string } | { kind: "file"; path: string };
+
+export type LogSourceInfo = {
+	id: string,
+	label: string,
+	/**  Path of the file, or empty for the journal. */
+	path: string,
+	available: boolean,
+};
+
+export type LoginRecord = {
+	user: string,
+	tty: string,
+	from: string,
+	/**  Login time and duration as printed by `last`. */
+	when: string,
+};
+
+export type LoginSession = {
+	user: string,
+	tty: string,
+	from: string,
+	login: string,
+	/**  A terminal opened from this Jarvis window. */
+	own: boolean,
+};
+
+export type MaintenanceStatus = {
+	packageManager: PackageManager | null,
+	updates: PendingUpdate[],
+	rebootRequired: boolean,
+	/**  Packages or reasons that request the reboot. */
+	rebootReasons: string[],
+	autoUpdates: AutoUpdates,
+};
+
+export type ManagedVar = {
+	file: EnvFile,
+	path: string,
+	key: string,
+	value: string,
+};
+
+export type Mount = {
+	/**  `bind`, `volume` or `tmpfs`. */
+	kind: string,
+	/**  Host path or volume name. */
+	source: string,
+	target: string,
+	readOnly: boolean,
+};
+
+export type NamedDefinition = {
+	name: string,
+	definition: string,
+};
+
+export type Network = {
+	id: string,
+	name: string,
+	driver: string,
+	scope: string,
+};
+
+export type NetworkAttachment = {
+	name: string,
+	ip: string,
+	gateway: string,
+	mac: string,
+};
+
+export type NewFs = "ext4" | "xfs" | "fat32";
+
+export type NewUser = {
+	name: string,
+	shell: string,
+	comment: string,
+	/**  Optional initial password (sent on stdin to `chpasswd`). */
+	password: string,
+};
+
+export type NginxControl = "test" | "reload" | "restart" | "status";
+
+export type NginxTarget = {
+	target: ExecTarget,
+	/**  Usually `/etc/nginx`. */
+	configRoot: string,
+};
+
+export type PackageHit = {
+	name: string,
+	description: string,
+};
+
 export type PackageManager = "apt" | "dnf" | "yum" | "apk" | "pacman" | "zypper";
+
+export type PageRequest = {
+	table: TableRef,
+	/**  1-based page number. */
+	page: number,
+	pageSize: number,
+	sort: Sort | null,
+	filters: Filter[],
+};
+
+export type PangolinOrg = {
+	id: string,
+	name: string,
+};
 
 export type PangolinSettings = {
 	apiUrl: string,
+	/**  Prefix in front of `/v1` found when verifying ("" or "/api"). */
+	basePath: string,
 	orgId: string,
 };
+
+export type PangolinStatus = {
+	configured: boolean,
+	apiUrl: string,
+	orgId: string,
+};
+
+export type PangolinVerify = {
+	/**  Organisations visible to the key; empty for a key scoped to one org. */
+	orgs: PangolinOrg[],
+	/**  The key works but cannot list organisations (enter the org ID manually). */
+	limited: boolean,
+};
+
+export type Partition = {
+	device: string,
+	fsType: string,
+	mount: string,
+	total: number,
+	used: number,
+	available: number,
+	usePercent: number,
+	/**  `None` when the filesystem does not report inodes (e.g. btrfs). */
+	inodePercent: number | null,
+};
+
+export type PartitionRequest = {
+	disk: string,
+	/**  Write a new partition table first (destroys everything on the disk). */
+	newTable: TableKind | null,
+	filesystem: NewFs,
+	label: string,
+};
+
+export type PendingUpdate = {
+	name: string,
+	/**  Installed version, when the package manager reports it. */
+	current: string,
+	candidate: string,
+};
+
+export type PortMapping = {
+	hostIp: string,
+	hostPort: string,
+	containerPort: string,
+	/**  `tcp` or `udp`. */
+	protocol: string,
+};
+
+export type Process = {
+	pid: number,
+	user: string,
+	cpu: number,
+	mem: number,
+	nice: number | null,
+	command: string,
+};
+
+export type ProcessSignal = "term" | "kill";
 
 export type Profile = {
 	id: string,
@@ -211,6 +1335,121 @@ export type ProfileView = {
 	hasPassphrase: boolean,
 };
 
+export type ProxyHost = {
+	id: string,
+	domains: string[],
+	/**  `http` or `https` (how nginx talks to the upstream). */
+	scheme: string,
+	forwardHost: string,
+	forwardPort: number,
+	websockets: boolean,
+	blockExploits: boolean,
+	cacheAssets: boolean,
+	ssl: ProxySsl,
+	/**  Extra directives placed inside the `location /` block. */
+	advanced: string,
+	enabled: boolean,
+};
+
+export type ProxySsl = {
+	enabled: boolean,
+	/**  certbot certificate name (its `live/<name>` directory). */
+	certificate: string,
+	forceHttps: boolean,
+	http2: boolean,
+	hsts: boolean,
+	hstsSubdomains: boolean,
+	hstsPreload: boolean,
+};
+
+export type PruneTarget = "images" | "volumes" | "containers" | "networks";
+
+export type RepoStats = {
+	totalSize: number,
+	totalFileCount: number,
+	snapshotsCount: number,
+};
+
+export type RepoStatus = {
+	initialized: boolean,
+	version: string,
+	/**  Why the repository could not be opened, when it exists but access failed. */
+	problem: string | null,
+};
+
+export type RestartPolicy = "always" | "onFailure" | "no";
+
+export type ResticMaintenance = "check" | "unlock" | "prune";
+
+export type ResticRepo = {
+	id: string,
+	name: string,
+	/**  `local`, `s3`, `b2`, `sftp`, `rest` or `rclone`. */
+	kind: string,
+	/**  The repository string restic understands, e.g. `s3:https://host/bucket/path`. */
+	repository: string,
+	/**  Type-specific form fields, kept so the edit form can be refilled. */
+	fields: { [key in string]: string },
+	/**  Names of extra environment variables (their values are secrets). */
+	envNames: string[],
+	sudo: boolean,
+};
+
+/**  Secret values sent when saving a repository. `None` keeps what is stored. */
+export type ResticSecrets = {
+	password: string | null,
+	accessKey: string | null,
+	secretKey: string | null,
+	env: ([string, string])[],
+};
+
+/**  A result set with every value as text. */
+export type ResultSet = {
+	columns: string[],
+	columnTypes: string[],
+	rows: ((string | null)[])[],
+	/**  More rows existed than were returned. */
+	truncated: boolean,
+};
+
+/**  What the right mouse button does in the terminal. */
+export type RightClick = "menu" | "paste" | 
+/**  Copy when text is selected, paste otherwise. */
+"copyOrPaste";
+
+export type ScheduleInfo = {
+	id: string,
+	/**  The script and env file exist on the server. */
+	installed: boolean,
+	/**  The line in root's crontab; empty when paused or missing. */
+	cronLine: string,
+	log: string,
+};
+
+export type ServiceSpec = {
+	/**  Unit name without the `.service` suffix. */
+	name: string,
+	description: string,
+	execStart: string,
+	user: string,
+	restart: RestartPolicy,
+	workingDir: string,
+	/**  `KEY=value` pairs. */
+	environment: ([string, string])[],
+	enable: boolean,
+	start: boolean,
+};
+
+export type ServiceUnit = {
+	name: string,
+	load: string,
+	active: string,
+	sub: string,
+	/**  `enabled`, `disabled`, `static`, `masked`, … or empty when unknown. */
+	enabled: string,
+	description: string,
+};
+
 export type SessionInfo = {
 	profileId: string,
 	host: string,
@@ -218,6 +1457,42 @@ export type SessionInfo = {
 	home: string,
 	isRoot: boolean,
 	hasSudo: boolean,
+};
+
+export type Sessions = {
+	current: LoginSession[],
+	recent: LoginRecord[],
+};
+
+export type Snapshot = {
+	id: string,
+	shortId: string,
+	time: string,
+	hostname: string,
+	paths: string[],
+	tags: string[],
+};
+
+export type SnapshotNode = {
+	name: string,
+	path: string,
+	dir: boolean,
+	size: number,
+	mode: number,
+	modified: string,
+};
+
+export type Sort = {
+	column: string,
+	descending: boolean,
+};
+
+export type StatementResult = {
+	statement: string,
+	result: ResultSet | null,
+	affected: number | null,
+	error: string | null,
+	elapsedMs: number,
 };
 
 export type SudoMode = "root" | "passwordless" | "password" | "unavailable";
@@ -228,17 +1503,100 @@ export type SudoStatus = {
 	ready: boolean,
 };
 
+export type SystemInfo = {
+	os: string,
+	hostname: string,
+	kernel: string,
+};
+
+export type TableInfo = {
+	name: string,
+	view: boolean,
+};
+
+export type TableKind = "gpt" | "mbr";
+
+export type TableRef = {
+	database: string,
+	/**  PostgreSQL schema; ignored for MySQL. */
+	schema: string,
+	table: string,
+};
+
+export type TableStructure = {
+	columns: ColumnInfo[],
+	indexes: NamedDefinition[],
+	foreignKeys: NamedDefinition[],
+};
+
+export type TerminalData = {
+	id: string,
+	data: string,
+};
+
+export type TerminalExit = {
+	id: string,
+	exitCode: number | null,
+	/**  Set when the terminal ended because of an error (e.g. connection lost). */
+	error: AppError | null,
+};
+
 export type TerminalPrefs = {
 	fontFamily: string,
 	fontSize: number,
+	/**  Line height in percent of the font's own height. */
+	lineHeight: number,
+	/**  Extra space between characters, in pixels. */
+	letterSpacing: number,
 	/**  Name of a built-in terminal colour scheme. */
 	theme: string,
-	copyOnSelect: boolean,
-	rightClickPaste: boolean,
+	cursorStyle: CursorStyle,
+	cursorBlink: boolean,
 	scrollback: number,
+	/**  Typing jumps back to the bottom of the scrollback. */
+	scrollOnInput: boolean,
+	copyOnSelect: boolean,
+	rightClick: RightClick,
+	middleClickPaste: boolean,
+	/**  Ctrl+C copies when text is selected and Ctrl+V pastes. */
+	ctrlCopyPaste: boolean,
+	confirmMultilinePaste: boolean,
+	bell: Bell,
+	/**  Characters that end a word when double-clicking to select. */
+	wordSeparators: string,
 };
 
+export type TerminalTarget = 
+/**  The login shell of the connected user. */
+{ kind: "host" } | 
+/**  `docker exec -it <container> <shell>`. */
+{ kind: "container"; container: string; shell: string };
+
 export type Theme = "dark" | "light" | "system";
+
+export type TimerSpec = {
+	/**  Base name; creates `<name>.timer` and `<name>.service`. */
+	name: string,
+	description: string,
+	/**  systemd calendar expression, e.g. `daily` or `*-*-* 03:00:00`. */
+	onCalendar: string,
+	command: string,
+	user: string,
+	/**  Run a missed job after boot. */
+	persistent: boolean,
+};
+
+export type TimerUnit = {
+	unit: string,
+	description: string,
+	/**  The service this timer starts. */
+	activates: string,
+	/**  Unix seconds; `None` when not scheduled / never ran. */
+	next: number | null,
+	last: number | null,
+	enabled: string,
+	active: string,
+};
 
 export type Tool = "systemd" | "cron" | "docker" | "mtr" | "traceroute" | "netcat" | "dig" | "curl" | "ping" | "restic" | "rclone" | "nginx" | "certbot" | "certbotNginx" | "certbotDnsCloudflare" | "certbotDnsDigitalocean" | "certbotDnsRoute53" | "ufw" | "iptables" | "crowdsec" | "crowdsecFirewallBouncer" | "mysqlClient" | "postgresClient" | "parted" | "growpart" | "lsblk" | "ss" | "zip";
 
@@ -251,6 +1609,119 @@ export type ToolStatus = {
 	/**  Command the user can run by hand; `None` without a known package manager. */
 	manualCommand: string | null,
 	docsUrl: string,
+};
+
+/**  Every job of a batch reached a final state. */
+export type TransferBatchDone = {
+	batchId: string,
+	failed: number,
+};
+
+export type TransferJob = {
+	id: string,
+	batchId: string,
+	kind: TransferKind,
+	name: string,
+	local: string,
+	remote: string,
+	destination: string,
+	size: number,
+	transferred: number,
+	/**  Bytes per second over the last progress interval. */
+	speed: number,
+	status: TransferStatus,
+	error: AppError | null,
+	attempts: number,
+	/**  The transfer had to go through root. */
+	elevated: boolean,
+};
+
+export type TransferKind = "upload" | "download" | "move" | "copy" | "delete";
+
+/**  One item the user asked to transfer. Directories are expanded into files. */
+export type TransferRequest = {
+	kind: TransferKind,
+	/**  Upload: local source. Download: local target. Unused otherwise. */
+	local: string,
+	/**  Upload: remote target. Download / move / copy / delete: remote source. */
+	remote: string,
+	/**  Move / copy: remote destination directory. */
+	destination: string,
+	conflict: ConflictPolicy,
+	/**  Download only: delete the remote file afterwards (temporary exports). */
+	cleanupRemote: boolean,
+};
+
+export type TransferStatus = "queued" | "running" | "done" | "failed" | "cancelled" | "skipped";
+
+export type TransferUpdate = {
+	job: TransferJob,
+};
+
+export type UfwRule = {
+	number: number,
+	to: string,
+	action: string,
+	from: string,
+};
+
+export type UfwRuleSpec = {
+	/**  `allow`, `deny` or `reject`. */
+	action: string,
+	/**  Port or range (`80`, `8000:8100`); empty for "any port". */
+	port: string,
+	/**  `any`, `tcp` or `udp`. */
+	protocol: string,
+	/**  Source IP or CIDR; empty for anywhere. */
+	source: string,
+};
+
+export type UfwStatus = {
+	active: boolean,
+	rules: UfwRule[],
+};
+
+export type UnitAction = "start" | "stop" | "restart" | "reload" | "enable" | "disable";
+
+export type UnitFile = {
+	path: string,
+	content: string,
+	/**  Created by Jarvis, so it may be deleted from here. */
+	managed: boolean,
+};
+
+export type User = {
+	name: string,
+	uid: number,
+	gid: number,
+	comment: string,
+	home: string,
+	shell: string,
+	/**  All groups: the primary one first, then supplementary groups. */
+	groups: string[],
+	/**  `None` when it could not be determined without root. */
+	locked: boolean | null,
+};
+
+export type Volume = {
+	name: string,
+	driver: string,
+	mountpoint: string,
+	unused: boolean,
+};
+
+export type WhitelistFile = {
+	path: string,
+	content: string,
+	/**  The file Jarvis writes; the others are read-only here. */
+	managed: boolean,
+};
+
+export type Whitelists = {
+	/**  Parser whitelist YAML files (parsed by the UI). */
+	files: WhitelistFile[],
+	/**  LAPI allowlists (CrowdSec 1.6.8+; empty on older versions). */
+	allowlists: Allowlist[],
 };
 
 /* Tauri Specta runtime */

@@ -97,13 +97,7 @@ impl ProfileStore {
             Ok(p) => (p.into_iter().map(Profile::from).collect(), None),
             Err(e) => (Vec::new(), Some(e)),
         };
-        (
-            Self {
-                file,
-                profiles: Mutex::new(profiles),
-            },
-            notice,
-        )
+        (Self { file, profiles: Mutex::new(profiles) }, notice)
     }
 
     pub fn list(&self) -> Vec<Profile> {
@@ -111,12 +105,7 @@ impl ProfileStore {
     }
 
     pub fn get(&self, id: &str) -> AppResult<Profile> {
-        self.profiles
-            .lock()
-            .iter()
-            .find(|p| p.id == id)
-            .cloned()
-            .ok_or_else(|| AppError::new(ErrorCode::NotFound, "profile"))
+        self.profiles.lock().iter().find(|p| p.id == id).cloned().ok_or_else(|| AppError::new(ErrorCode::NotFound, "profile"))
     }
 
     pub fn upsert(&self, input: &ProfileInput) -> AppResult<Profile> {
@@ -128,11 +117,7 @@ impl ProfileStore {
         }
         validate::host(host)?;
         let port = validate::port(input.port)?;
-        if username.is_empty()
-            || username
-                .bytes()
-                .any(|b| b.is_ascii_whitespace() || b.is_ascii_control())
-        {
+        if username.is_empty() || username.bytes().any(|b| b.is_ascii_whitespace() || b.is_ascii_control()) {
             return Err(AppError::invalid("Invalid user name"));
         }
         let key_path = match input.auth_type {
@@ -149,10 +134,7 @@ impl ProfileStore {
         let mut profiles = self.profiles.lock();
         let profile = match &input.id {
             Some(id) => {
-                let existing = profiles
-                    .iter_mut()
-                    .find(|p| &p.id == id)
-                    .ok_or_else(|| AppError::new(ErrorCode::NotFound, "profile"))?;
+                let existing = profiles.iter_mut().find(|p| &p.id == id).ok_or_else(|| AppError::new(ErrorCode::NotFound, "profile"))?;
                 existing.label = label.to_string();
                 existing.host = host.to_string();
                 existing.port = port;
@@ -215,23 +197,14 @@ pub fn resolve_key_path(picked: &Path) -> AppResult<String> {
         if !private.is_file() {
             return Err(AppError::new(
                 ErrorCode::KeyFileInvalid,
-                format!(
-                    "{} is a public key and its private key {} was not found",
-                    picked.display(),
-                    private.display()
-                ),
+                format!("{} is a public key and its private key {} was not found", picked.display(), private.display()),
             ));
         }
         private
     } else {
         picked
     };
-    let head = read_head(&path).map_err(|e| {
-        AppError::new(
-            ErrorCode::KeyFileInvalid,
-            format!("{}: {}", path.display(), e),
-        )
-    })?;
+    let head = read_head(&path).map_err(|e| AppError::new(ErrorCode::KeyFileInvalid, format!("{}: {}", path.display(), e)))?;
     let text = String::from_utf8_lossy(&head);
     if text.starts_with("PuTTY-User-Key-File") {
         return Err(AppError::new(
@@ -240,10 +213,7 @@ pub fn resolve_key_path(picked: &Path) -> AppResult<String> {
         ));
     }
     if !text.contains("PRIVATE KEY-----") {
-        return Err(AppError::new(
-            ErrorCode::KeyFileInvalid,
-            format!("{} is not a private key file", path.display()),
-        ));
+        return Err(AppError::new(ErrorCode::KeyFileInvalid, format!("{} is not a private key file", path.display())));
     }
     Ok(path.to_string_lossy().into_owned())
 }
@@ -259,9 +229,7 @@ fn read_head(path: &Path) -> std::io::Result<Vec<u8>> {
 
 pub fn expand_home(path: &Path) -> PathBuf {
     match path.strip_prefix("~") {
-        Ok(rest) => dirs::home_dir()
-            .map(|h| h.join(rest))
-            .unwrap_or_else(|| path.to_path_buf()),
+        Ok(rest) => dirs::home_dir().map(|h| h.join(rest)).unwrap_or_else(|| path.to_path_buf()),
         Err(_) => path.to_path_buf(),
     }
 }
@@ -361,27 +329,14 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let private = dir.path().join("id_ed25519");
         let public = dir.path().join("id_ed25519.pub");
-        std::fs::write(
-            &private,
-            "-----BEGIN OPENSSH PRIVATE KEY-----\nabc\n-----END OPENSSH PRIVATE KEY-----\n",
-        )
-        .unwrap();
+        std::fs::write(&private, "-----BEGIN OPENSSH PRIVATE KEY-----\nabc\n-----END OPENSSH PRIVATE KEY-----\n").unwrap();
         std::fs::write(&public, "ssh-ed25519 AAAA user@host\n").unwrap();
-        assert_eq!(
-            resolve_key_path(&public).unwrap(),
-            private.to_string_lossy()
-        );
-        assert_eq!(
-            resolve_key_path(&private).unwrap(),
-            private.to_string_lossy()
-        );
+        assert_eq!(resolve_key_path(&public).unwrap(), private.to_string_lossy());
+        assert_eq!(resolve_key_path(&private).unwrap(), private.to_string_lossy());
 
         let orphan = dir.path().join("other.pub");
         std::fs::write(&orphan, "ssh-ed25519 AAAA\n").unwrap();
-        assert_eq!(
-            resolve_key_path(&orphan).unwrap_err().code,
-            ErrorCode::KeyFileInvalid
-        );
+        assert_eq!(resolve_key_path(&orphan).unwrap_err().code, ErrorCode::KeyFileInvalid);
 
         let ppk = dir.path().join("key.ppk");
         std::fs::write(&ppk, "PuTTY-User-Key-File-3: ssh-ed25519\n").unwrap();

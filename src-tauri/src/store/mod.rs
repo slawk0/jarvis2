@@ -64,11 +64,7 @@ pub fn load_json<T: DeserializeOwned + Default>(path: &Path) -> AppResult<T> {
             std::fs::rename(path, &backup)?;
             Err(AppError::new(
                 ErrorCode::StoreCorrupt,
-                format!(
-                    "{} could not be read ({parse_error}); it was kept as {}",
-                    path.display(),
-                    backup.display()
-                ),
+                format!("{} could not be read ({parse_error}); it was kept as {}", path.display(), backup.display()),
             ))
         }
     }
@@ -114,9 +110,7 @@ fn merge(base: &mut serde_json::Value, overlay: serde_json::Value) {
 pub fn save_json<T: Serialize + ?Sized>(path: &Path, value: &T) -> AppResult<()> {
     use std::io::Write;
 
-    let dir = path
-        .parent()
-        .ok_or_else(|| AppError::internal("store path has no parent"))?;
+    let dir = path.parent().ok_or_else(|| AppError::internal("store path has no parent"))?;
     std::fs::create_dir_all(dir)?;
     let mut tmp = path.as_os_str().to_owned();
     tmp.push(format!(".tmp-{}", uuid::Uuid::new_v4().simple()));
@@ -167,15 +161,9 @@ mod tests {
         let err = load_json::<Vec<String>>(&path).unwrap_err();
         assert_eq!(err.code, ErrorCode::StoreCorrupt);
         assert!(!path.exists());
-        let backups: Vec<_> = std::fs::read_dir(dir.path())
-            .unwrap()
-            .map(|e| e.unwrap().file_name().into_string().unwrap())
-            .collect();
+        let backups: Vec<_> = std::fs::read_dir(dir.path()).unwrap().map(|e| e.unwrap().file_name().into_string().unwrap()).collect();
         assert_eq!(backups.len(), 1);
         assert!(backups[0].starts_with("a.json.corrupt-"));
-        assert_eq!(
-            std::fs::read(dir.path().join(&backups[0])).unwrap(),
-            b"{ not json"
-        );
+        assert_eq!(std::fs::read(dir.path().join(&backups[0])).unwrap(), b"{ not json");
     }
 }

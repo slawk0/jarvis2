@@ -18,13 +18,13 @@
 </script>
 
 <div class={cn('flex flex-col gap-1.5', className)}>
-	<Label for={htmlFor} class="text-muted-foreground text-xs font-medium">
+	<Label for={htmlFor} class="text-xs font-medium text-muted-foreground">
 		{label}{#if required}<span class="text-destructive"> *</span>{/if}
 	</Label>
 	{@render children()}
 	{#if error}
-		<p class="text-destructive text-xs">{error}</p>
+		<p class="text-xs text-destructive">{error}</p>
 	{:else if hint}
-		<p class="text-muted-foreground text-xs">{hint}</p>
+		<p class="text-xs text-muted-foreground">{hint}</p>
 	{/if}
 </div>

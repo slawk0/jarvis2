@@ -65,10 +65,7 @@ impl PackageManager {
     ];
 
     pub fn from_binary(name: &str) -> Option<Self> {
-        Self::ALL
-            .iter()
-            .find(|(_, bin)| *bin == name.trim())
-            .map(|(pm, _)| *pm)
+        Self::ALL.iter().find(|(_, bin)| *bin == name.trim()).map(|(pm, _)| *pm)
     }
 
     /// Shell snippet printing the first package manager binary found.
@@ -81,9 +78,7 @@ impl PackageManager {
     pub fn install_command(self, packages: &[&str]) -> String {
         let pkgs = packages.join(" ");
         match self {
-            PackageManager::Apt => format!(
-                "export DEBIAN_FRONTEND=noninteractive; apt-get update -q && apt-get install -y -q {pkgs}"
-            ),
+            PackageManager::Apt => format!("export DEBIAN_FRONTEND=noninteractive; apt-get update -q && apt-get install -y -q {pkgs}"),
             PackageManager::Dnf => format!("dnf install -y {pkgs}"),
             PackageManager::Yum => format!("yum install -y {pkgs}"),
             PackageManager::Apk => format!("apk add --no-cache {pkgs}"),
@@ -152,12 +147,18 @@ fn python_module_probe(module: &'static str) -> &'static str {
             "python3 -c 'import certbot_nginx' 2>/dev/null || \
              { command -v snap >/dev/null 2>&1 && snap list certbot >/dev/null 2>&1; }"
         }
-        "certbot_dns_cloudflare" => "python3 -c 'import certbot_dns_cloudflare' 2>/dev/null || \
-             { command -v snap >/dev/null 2>&1 && snap list certbot-dns-cloudflare >/dev/null 2>&1; }",
-        "certbot_dns_digitalocean" => "python3 -c 'import certbot_dns_digitalocean' 2>/dev/null || \
-             { command -v snap >/dev/null 2>&1 && snap list certbot-dns-digitalocean >/dev/null 2>&1; }",
-        _ => "python3 -c 'import certbot_dns_route53' 2>/dev/null || \
-             { command -v snap >/dev/null 2>&1 && snap list certbot-dns-route53 >/dev/null 2>&1; }",
+        "certbot_dns_cloudflare" => {
+            "python3 -c 'import certbot_dns_cloudflare' 2>/dev/null || \
+             { command -v snap >/dev/null 2>&1 && snap list certbot-dns-cloudflare >/dev/null 2>&1; }"
+        }
+        "certbot_dns_digitalocean" => {
+            "python3 -c 'import certbot_dns_digitalocean' 2>/dev/null || \
+             { command -v snap >/dev/null 2>&1 && snap list certbot-dns-digitalocean >/dev/null 2>&1; }"
+        }
+        _ => {
+            "python3 -c 'import certbot_dns_route53' 2>/dev/null || \
+             { command -v snap >/dev/null 2>&1 && snap list certbot-dns-route53 >/dev/null 2>&1; }"
+        }
     }
 }
 
@@ -208,55 +209,26 @@ fn spec(tool: Tool) -> Spec {
         Tool::Traceroute => simple(
             "traceroute",
             "command -v traceroute >/dev/null 2>&1 || command -v tracepath >/dev/null 2>&1",
-            Packages([
-                &["traceroute"],
-                &["traceroute"],
-                &["iputils-tracepath"],
-                &["traceroute"],
-                &["traceroute"],
-            ]),
+            Packages([&["traceroute"], &["traceroute"], &["iputils-tracepath"], &["traceroute"], &["traceroute"]]),
             "https://man7.org/linux/man-pages/man8/traceroute.8.html",
         ),
         Tool::Netcat => simple(
             "netcat",
             "command -v nc >/dev/null 2>&1 || command -v ncat >/dev/null 2>&1",
-            Packages([
-                &["netcat-openbsd"],
-                &["nmap-ncat"],
-                &["netcat-openbsd"],
-                &["openbsd-netcat"],
-                &["netcat-openbsd"],
-            ]),
+            Packages([&["netcat-openbsd"], &["nmap-ncat"], &["netcat-openbsd"], &["openbsd-netcat"], &["netcat-openbsd"]]),
             "https://man.openbsd.org/nc.1",
         ),
         Tool::Dig => simple(
             "dig",
             "command -v dig >/dev/null 2>&1",
-            Packages([
-                &["dnsutils"],
-                &["bind-utils"],
-                &["bind-tools"],
-                &["bind"],
-                &["bind-utils"],
-            ]),
+            Packages([&["dnsutils"], &["bind-utils"], &["bind-tools"], &["bind"], &["bind-utils"]]),
             "https://bind9.readthedocs.io/en/latest/manpages.html#dig-dns-lookup-utility",
         ),
-        Tool::Curl => simple(
-            "curl",
-            "command -v curl >/dev/null 2>&1",
-            Packages::same(&["curl"]),
-            "https://curl.se/docs/",
-        ),
+        Tool::Curl => simple("curl", "command -v curl >/dev/null 2>&1", Packages::same(&["curl"]), "https://curl.se/docs/"),
         Tool::Ping => simple(
             "ping",
             "command -v ping >/dev/null 2>&1",
-            Packages([
-                &["iputils-ping"],
-                &["iputils"],
-                &["iputils"],
-                &["iputils"],
-                &["iputils"],
-            ]),
+            Packages([&["iputils-ping"], &["iputils"], &["iputils"], &["iputils"], &["iputils"]]),
             "https://man7.org/linux/man-pages/man8/ping.8.html",
         ),
         Tool::Restic => simple(
@@ -265,24 +237,13 @@ fn spec(tool: Tool) -> Spec {
             Packages::same(&["restic"]),
             "https://restic.readthedocs.io/en/stable/020_installation.html",
         ),
-        Tool::Rclone => simple(
-            "rclone",
-            "command -v rclone >/dev/null 2>&1",
-            Packages::same(&["rclone"]),
-            "https://rclone.org/install/",
-        ),
-        Tool::Nginx => simple(
-            "nginx",
-            "command -v nginx >/dev/null 2>&1",
-            Packages::same(&["nginx"]),
-            "https://nginx.org/en/docs/install.html",
-        ),
-        Tool::Certbot => simple(
-            "certbot",
-            "command -v certbot >/dev/null 2>&1",
-            Packages::same(&["certbot"]),
-            "https://certbot.eff.org/instructions",
-        ),
+        Tool::Rclone => simple("rclone", "command -v rclone >/dev/null 2>&1", Packages::same(&["rclone"]), "https://rclone.org/install/"),
+        Tool::Nginx => {
+            simple("nginx", "command -v nginx >/dev/null 2>&1", Packages::same(&["nginx"]), "https://nginx.org/en/docs/install.html")
+        }
+        Tool::Certbot => {
+            simple("certbot", "command -v certbot >/dev/null 2>&1", Packages::same(&["certbot"]), "https://certbot.eff.org/instructions")
+        }
         Tool::CertbotNginx => simple(
             "certbot nginx plugin",
             python_module_probe("certbot_nginx"),
@@ -331,12 +292,7 @@ fn spec(tool: Tool) -> Spec {
             ]),
             "https://certbot-dns-route53.readthedocs.io/",
         ),
-        Tool::Ufw => simple(
-            "ufw",
-            "command -v ufw >/dev/null 2>&1",
-            Packages::same(&["ufw"]),
-            "https://help.ubuntu.com/community/UFW",
-        ),
+        Tool::Ufw => simple("ufw", "command -v ufw >/dev/null 2>&1", Packages::same(&["ufw"]), "https://help.ubuntu.com/community/UFW"),
         Tool::Iptables => simple(
             "iptables",
             "command -v iptables >/dev/null 2>&1",
@@ -355,9 +311,7 @@ fn spec(tool: Tool) -> Spec {
         },
         Tool::CrowdsecFirewallBouncer => Spec {
             installer: Some(INSTALL_CROWDSEC_REPO),
-            post_install: Some(
-                "systemctl enable --now crowdsec-firewall-bouncer 2>/dev/null || true",
-            ),
+            post_install: Some("systemctl enable --now crowdsec-firewall-bouncer 2>/dev/null || true"),
             ..simple(
                 "CrowdSec firewall bouncer",
                 "command -v crowdsec-firewall-bouncer >/dev/null 2>&1 || \
@@ -375,25 +329,13 @@ fn spec(tool: Tool) -> Spec {
         Tool::MysqlClient => simple(
             "MySQL client (mysqldump)",
             "command -v mysqldump >/dev/null 2>&1 || command -v mariadb-dump >/dev/null 2>&1",
-            Packages([
-                &["default-mysql-client"],
-                &["mariadb"],
-                &["mariadb-client"],
-                &["mariadb-clients"],
-                &["mariadb-client"],
-            ]),
+            Packages([&["default-mysql-client"], &["mariadb"], &["mariadb-client"], &["mariadb-clients"], &["mariadb-client"]]),
             "https://mariadb.com/kb/en/mariadb-dump/",
         ),
         Tool::PostgresClient => simple(
             "PostgreSQL client (pg_dump)",
             "command -v pg_dump >/dev/null 2>&1",
-            Packages([
-                &["postgresql-client"],
-                &["postgresql"],
-                &["postgresql-client"],
-                &["postgresql"],
-                &["postgresql"],
-            ]),
+            Packages([&["postgresql-client"], &["postgresql"], &["postgresql-client"], &["postgresql"], &["postgresql"]]),
             "https://www.postgresql.org/docs/current/app-pgdump.html",
         ),
         Tool::Parted => simple(
@@ -405,37 +347,19 @@ fn spec(tool: Tool) -> Spec {
         Tool::Growpart => simple(
             "growpart",
             "command -v growpart >/dev/null 2>&1",
-            Packages([
-                &["cloud-guest-utils"],
-                &["cloud-utils-growpart"],
-                &["cloud-utils-growpart"],
-                &["cloud-guest-utils"],
-                &["growpart"],
-            ]),
+            Packages([&["cloud-guest-utils"], &["cloud-utils-growpart"], &["cloud-utils-growpart"], &["cloud-guest-utils"], &["growpart"]]),
             "https://manpages.debian.org/growpart",
         ),
         Tool::Lsblk => simple(
             "lsblk",
             "command -v lsblk >/dev/null 2>&1",
-            Packages([
-                &["util-linux"],
-                &["util-linux"],
-                &["lsblk"],
-                &["util-linux"],
-                &["util-linux"],
-            ]),
+            Packages([&["util-linux"], &["util-linux"], &["lsblk"], &["util-linux"], &["util-linux"]]),
             "https://man7.org/linux/man-pages/man8/lsblk.8.html",
         ),
         Tool::Ss => simple(
             "ss (iproute2)",
             "command -v ss >/dev/null 2>&1",
-            Packages([
-                &["iproute2"],
-                &["iproute"],
-                &["iproute2"],
-                &["iproute2"],
-                &["iproute2"],
-            ]),
+            Packages([&["iproute2"], &["iproute"], &["iproute2"], &["iproute2"], &["iproute2"]]),
             "https://man7.org/linux/man-pages/man8/ss.8.html",
         ),
         Tool::Zip => simple(
@@ -458,9 +382,7 @@ fn install_script(tool: Tool, pm: Option<PackageManager>) -> Option<String> {
         _ => None,
     };
     let mut script = match (spec.installer, pkg_install) {
-        (Some(installer), pkg) if installer.contains("{pkg_install}") => {
-            installer.replace("{pkg_install}", &pkg?)
-        }
+        (Some(installer), pkg) if installer.contains("{pkg_install}") => installer.replace("{pkg_install}", &pkg?),
         (Some(installer), _) => installer.to_string(),
         (None, Some(pkg)) => pkg,
         (None, None) => return None,
@@ -500,10 +422,7 @@ pub async fn package_manager(session: &Session) -> AppResult<Option<PackageManag
 pub async fn check(session: &Session, tools: &[Tool]) -> AppResult<DepsReport> {
     let mut script = format!("echo \"pm:$({})\"\n", PackageManager::detect_script());
     for (i, tool) in tools.iter().enumerate() {
-        script.push_str(&format!(
-            "if {{ {}; }}; then echo \"{i}:1\"; else echo \"{i}:0\"; fi\n",
-            spec(*tool).probe
-        ));
+        script.push_str(&format!("if {{ {}; }}; then echo \"{i}:1\"; else echo \"{i}:0\"; fi\n", spec(*tool).probe));
     }
     let out = session.exec(Exec::new(script).secs(45)).await?.stdout;
     let mut pm = None;
@@ -536,10 +455,7 @@ pub async fn check(session: &Session, tools: &[Tool]) -> AppResult<DepsReport> {
             }
         })
         .collect();
-    Ok(DepsReport {
-        package_manager: pm,
-        tools,
-    })
+    Ok(DepsReport { package_manager: pm, tools })
 }
 
 /// Fail with `DEPENDENCY_MISSING` unless the tool is present.
@@ -566,17 +482,10 @@ pub async fn deps_check(state: State<'_, AppState>, tools: Vec<Tool>) -> AppResu
 pub async fn deps_install(app: AppHandle, state: State<'_, AppState>, tool: Tool) -> AppResult<String> {
     let session = state.session()?;
     let pm = package_manager(&session).await?;
-    let script = install_script(tool, pm).ok_or_else(|| {
-        AppError::unsupported(format!(
-            "{} cannot be installed automatically on this server",
-            spec(tool).label
-        ))
-    })?;
+    let script = install_script(tool, pm)
+        .ok_or_else(|| AppError::unsupported(format!("{} cannot be installed automatically on this server", spec(tool).label)))?;
     let meta = JobMeta::visible(format!("Install {}", spec(tool).label), script.clone());
-    state
-        .jobs
-        .start(&app, session, meta, Exec::new(script).sudo())
-        .await
+    state.jobs.start(&app, session, meta, Exec::new(script).sudo()).await
 }
 
 #[cfg(test)]
@@ -643,26 +552,11 @@ mod tests {
             install_script(Tool::Dig, Some(PackageManager::Apt)).unwrap(),
             "export DEBIAN_FRONTEND=noninteractive; apt-get update -q && apt-get install -y -q dnsutils"
         );
-        assert_eq!(
-            install_script(Tool::Dig, Some(PackageManager::Dnf)).unwrap(),
-            "dnf install -y bind-utils"
-        );
-        assert_eq!(
-            install_script(Tool::Dig, Some(PackageManager::Yum)).unwrap(),
-            "yum install -y bind-utils"
-        );
-        assert_eq!(
-            install_script(Tool::Dig, Some(PackageManager::Apk)).unwrap(),
-            "apk add --no-cache bind-tools"
-        );
-        assert_eq!(
-            install_script(Tool::Zip, Some(PackageManager::Pacman)).unwrap(),
-            "pacman -Sy --noconfirm --needed zip unzip"
-        );
-        assert_eq!(
-            install_script(Tool::Curl, Some(PackageManager::Zypper)).unwrap(),
-            "zypper --non-interactive install curl"
-        );
+        assert_eq!(install_script(Tool::Dig, Some(PackageManager::Dnf)).unwrap(), "dnf install -y bind-utils");
+        assert_eq!(install_script(Tool::Dig, Some(PackageManager::Yum)).unwrap(), "yum install -y bind-utils");
+        assert_eq!(install_script(Tool::Dig, Some(PackageManager::Apk)).unwrap(), "apk add --no-cache bind-tools");
+        assert_eq!(install_script(Tool::Zip, Some(PackageManager::Pacman)).unwrap(), "pacman -Sy --noconfirm --needed zip unzip");
+        assert_eq!(install_script(Tool::Curl, Some(PackageManager::Zypper)).unwrap(), "zypper --non-interactive install curl");
     }
 
     #[test]
@@ -685,10 +579,7 @@ mod tests {
 
     #[test]
     fn detects_manager_from_binary_name() {
-        assert_eq!(
-            PackageManager::from_binary("apt-get\n"),
-            Some(PackageManager::Apt)
-        );
+        assert_eq!(PackageManager::from_binary("apt-get\n"), Some(PackageManager::Apt));
         assert_eq!(PackageManager::from_binary("apk"), Some(PackageManager::Apk));
         assert_eq!(PackageManager::from_binary(""), None);
     }

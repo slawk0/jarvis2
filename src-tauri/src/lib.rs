@@ -3,22 +3,42 @@
 //! One module per domain. Commands take validated arguments and return parsed,
 //! typed data; the frontend never builds shell strings.
 
+pub mod backups;
+#[cfg(test)]
+mod backups_live;
 pub mod connection;
+pub mod cron;
+pub mod crowdsec;
 pub mod db;
 pub mod deps;
+pub mod disks;
+pub mod docker;
+pub mod env;
 pub mod error;
+pub mod files;
+pub mod firewall;
 pub mod jobs;
 #[cfg(test)]
 mod live_tests;
 pub mod local;
+pub mod logs;
+pub mod network;
+pub mod nginx;
+pub mod packages;
+pub mod pangolin;
+pub mod restic;
+pub mod runbooks;
 pub mod sftp;
 pub mod shell;
 pub mod ssh;
 pub mod state;
+pub mod stats;
 pub mod store;
 pub mod sudo;
+pub mod systemd;
 pub mod terminal;
 pub mod text;
+pub mod users;
 
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -62,12 +82,221 @@ fn specta_builder() -> Builder<tauri::Wry> {
             jobs::job_cancel,
             deps::deps_check,
             deps::deps_install,
+            stats::stats_basic,
+            stats::stats_extended,
+            stats::process_list,
+            stats::process_signal,
+            stats::process_renice,
+            terminal::terminal_open,
+            terminal::terminal_write,
+            terminal::terminal_resize,
+            terminal::terminal_close,
+            terminal::terminal_cwd,
+            terminal::terminal_open_external,
+            files::files_list,
+            files::files_home,
+            files::files_complete,
+            files::files_read,
+            files::files_write,
+            files::files_create,
+            files::files_rename,
+            files::files_transfer,
+            files::files_duplicate,
+            files::files_delete,
+            files::files_chmod,
+            files::files_chown,
+            files::files_properties,
+            files::files_sizes,
+            files::files_search,
+            files::files_compress,
+            files::files_extract,
+            sftp::transfer::transfer_enqueue,
+            sftp::transfer::transfer_conflicts,
+            sftp::transfer::transfer_list,
+            sftp::transfer::transfer_cancel,
+            sftp::transfer::transfer_retry_failed,
+            sftp::transfer::transfer_clear_completed,
+            runbooks::runbook_run,
+            systemd::services_list,
+            systemd::unit_action,
+            systemd::unit_status,
+            systemd::unit_logs,
+            systemd::unit_logs_follow,
+            systemd::unit_file,
+            systemd::unit_file_save,
+            systemd::service_create,
+            systemd::timer_create,
+            systemd::unit_delete,
+            systemd::timers_list,
+            systemd::timer_run_now,
+            systemd::timer_inspect,
+            cron::cron_list,
+            cron::cron_root,
+            cron::cron_system_files,
+            cron::cron_add,
+            cron::cron_update,
+            cron::cron_set_enabled,
+            cron::cron_delete,
+            disks::disks_usage,
+            disks::disks_devices,
+            disks::disk_mount,
+            disks::disk_unmount,
+            disks::disk_create_partition,
+            disks::disk_expand,
+            disks::disk_fsck,
+            packages::maintenance_status,
+            packages::maintenance_refresh,
+            packages::maintenance_upgrade,
+            packages::maintenance_auto_updates,
+            packages::maintenance_reboot,
+            packages::package_search,
+            packages::package_change,
+            users::accounts_list,
+            users::user_create,
+            users::user_delete,
+            users::user_set_password,
+            users::user_set_locked,
+            users::user_set_groups,
+            users::group_create,
+            users::group_delete,
+            users::user_keys_get,
+            users::user_keys_set,
+            env::env_host,
+            env::env_container,
+            env::env_managed,
+            env::env_set,
+            env::env_remove,
+            docker::docker_overview,
+            docker::docker_containers,
+            docker::docker_container_action,
+            docker::docker_inspect,
+            docker::docker_container_detail,
+            docker::docker_rename,
+            docker::docker_set_restart_policy,
+            docker::docker_network_connect,
+            docker::docker_recreate,
+            docker::docker_logs_follow,
+            docker::docker_events_follow,
+            docker::docker_exec,
+            docker::docker_images,
+            docker::docker_image_remove,
+            docker::docker_image_pull,
+            docker::docker_prune,
+            docker::docker_networks,
+            docker::docker_network_create,
+            docker::docker_network_remove,
+            docker::docker_volumes,
+            docker::docker_volume_remove,
+            docker::docker_stats,
+            docker::compose::compose_list,
+            docker::compose::compose_action,
+            docker::compose::compose_logs,
+            docker::compose::compose_validate,
+            docker::compose::compose_forget,
+            docker::compose::compose_create,
+            network::network_listening,
+            network::network_connections,
+            network::network_interfaces,
+            network::netdiag_run,
+            network::ip_info,
+            firewall::firewall_detect,
+            firewall::ufw_status,
+            firewall::ufw_set_enabled,
+            firewall::ufw_add_rule,
+            firewall::ufw_delete_rule,
+            firewall::iptables_list,
+            firewall::iptables_add_rule,
+            firewall::iptables_delete_rule,
+            firewall::iptables_set_policy,
+            firewall::iptables_persist,
+            crowdsec::crowdsec_status,
+            crowdsec::crowdsec_decisions,
+            crowdsec::crowdsec_ban,
+            crowdsec::crowdsec_unban,
+            crowdsec::crowdsec_alerts,
+            crowdsec::crowdsec_alert_detail,
+            crowdsec::crowdsec_bouncers,
+            crowdsec::crowdsec_bouncer_add,
+            crowdsec::crowdsec_bouncer_delete,
+            crowdsec::crowdsec_bouncers_prune,
+            crowdsec::crowdsec_metrics,
+            crowdsec::crowdsec_source_tail,
+            crowdsec::crowdsec_hub,
+            crowdsec::crowdsec_hub_action,
+            crowdsec::crowdsec_hub_update,
+            crowdsec::crowdsec_whitelists,
+            crowdsec::crowdsec_whitelist_save,
+            crowdsec::crowdsec_allowlist_edit,
+            nginx::nginx_hosts,
+            nginx::nginx_host_save,
+            nginx::nginx_host_delete,
+            nginx::nginx_certificates,
+            nginx::nginx_cert_issue,
+            nginx::nginx_cert_action,
+            nginx::nginx_files,
+            nginx::nginx_file_read,
+            nginx::nginx_file_write,
+            nginx::nginx_control,
+            logs::logs_sources,
+            logs::logs_follow,
+            logs::sessions_list,
+            logs::sessions_failed,
+            logs::session_kick,
+            logs::log_analyze,
+            db::db_profiles,
+            db::db_profile_save,
+            db::db_profile_delete,
+            db::db_detect,
+            db::db_connect,
+            db::db_disconnect,
+            db::db_connected,
+            db::db_databases,
+            db::db_schemas,
+            db::db_tables,
+            db::db_table_structure,
+            db::db_table_data,
+            db::db_row_insert,
+            db::db_row_update,
+            db::db_rows_delete,
+            db::db_export_table,
+            db::db_query,
+            restic::restic_repos,
+            restic::restic_repo_save,
+            restic::restic_repo_delete,
+            restic::restic_rclone_remotes,
+            restic::restic_status,
+            restic::restic_init,
+            restic::restic_backup,
+            restic::restic_maintenance,
+            restic::restic_stats,
+            restic::restic_snapshots,
+            restic::restic_restore,
+            restic::restic_forget,
+            restic::restic_forget_policy,
+            restic::restic_ls,
+            restic::restic_find,
+            restic::restic_preview,
+            restic::restic_download,
+            backups::backup_templates,
+            backups::backup_template_save,
+            backups::backup_template_delete,
+            backups::backup_set_paused,
+            backups::backup_run,
+            backups::backup_schedule_info,
+            pangolin::pangolin_request,
+            pangolin::pangolin_status,
+            pangolin::pangolin_configure,
+            pangolin::pangolin_clear,
         ])
         .events(collect_events![
             connection::ConnectionStatus,
             jobs::JobStarted,
             jobs::JobOutput,
             jobs::JobDone,
+            terminal::TerminalData,
+            terminal::TerminalExit,
+            sftp::transfer::TransferUpdate,
+            sftp::transfer::TransferBatchDone,
         ])
         .typ::<error::ErrorCode>()
 }
@@ -79,8 +308,7 @@ pub fn export_bindings() {
     let export = || {
         specta_builder()
             .export(
-                specta_typescript::Typescript::default()
-                    .header("// Generated by tauri-specta. Do not edit.\n/* eslint-disable */"),
+                specta_typescript::Typescript::default().header("// Generated by tauri-specta. Do not edit.\n/* eslint-disable */"),
                 concat!(env!("CARGO_MANIFEST_DIR"), "/../src/lib/ipc/bindings.ts"),
             )
             .expect("failed to export TypeScript bindings");
@@ -125,12 +353,7 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click {
-                button: MouseButton::Left,
-                button_state: MouseButtonState::Up,
-                ..
-            } = event
-            {
+            if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
                 toggle_main_window(tray.app_handle());
             }
         });
@@ -165,10 +388,16 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
-            let config_dir = app.path().app_config_dir()?;
+            // JARVIS_CONFIG_DIR points the app at another data directory, which
+            // keeps development and test runs away from the real profiles.
+            let config_dir = match std::env::var_os("JARVIS_CONFIG_DIR") {
+                Some(dir) => std::path::PathBuf::from(dir),
+                None => app.path().app_config_dir()?,
+            };
             std::fs::create_dir_all(&config_dir)?;
             app.manage(AppState::new(config_dir));
             build_tray(app)?;

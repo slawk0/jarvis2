@@ -20,7 +20,7 @@
 	const backLabel = $derived(workspace.backLabel);
 </script>
 
-<header class="bg-background flex h-12 shrink-0 items-center gap-1 border-b px-3">
+<header class="flex h-12 shrink-0 items-center gap-1 border-b bg-background px-3">
 	<IconButton
 		label={backLabel ?? 'Nothing to go back to'}
 		side="bottom"
@@ -30,7 +30,7 @@
 		<ArrowLeft />
 	</IconButton>
 	{#if workspace.paneCount === 1 && current}
-		<current.icon class="text-primary ml-1 size-4" />
+		<current.icon class="ml-1 size-4 text-primary" />
 	{/if}
 	<h1 class="ml-1 truncate text-[15px] font-semibold">{title}</h1>
 
@@ -49,13 +49,13 @@
 			</IconButton>
 			{#if jobs.runningCount > 0}
 				<span
-					class="bg-info text-background tabular pointer-events-none absolute -top-0.5 -right-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-0.5 text-[9px] font-bold"
+					class="pointer-events-none absolute -top-0.5 -right-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-info px-0.5 text-[9px] font-bold text-background tabular"
 				>
 					{jobs.runningCount}
 				</span>
 			{/if}
 		</div>
-		<span class="bg-border mx-1.5 h-5 w-px"></span>
+		<span class="mx-1.5 h-5 w-px bg-border"></span>
 		<IconButton label="Single pane" side="bottom" onclick={() => workspace.applyPreset('single')}>
 			<Square />
 		</IconButton>
@@ -68,11 +68,15 @@
 		<IconButton label="2 × 2 grid" side="bottom" onclick={() => workspace.applyPreset('grid')}>
 			<Grid2x2 />
 		</IconButton>
-		<span class="bg-border mx-1.5 h-5 w-px"></span>
-		<IconButton label="Keyboard shortcuts (Ctrl+Shift+H)" side="bottom" onclick={() => (workspace.shortcutsOpen = true)}>
+		<span class="mx-1.5 h-5 w-px bg-border"></span>
+		<IconButton
+			label="Keyboard shortcuts (Ctrl+Shift+H)"
+			side="bottom"
+			onclick={() => (workspace.shortcutsOpen = true)}
+		>
 			<Keyboard />
 		</IconButton>
-		<IconButton label="Settings" side="bottom" onclick={() => (workspace.settingsOpen = true)}>
+		<IconButton label="Settings" side="bottom" onclick={() => workspace.openSettings()}>
 			<Settings />
 		</IconButton>
 	</div>

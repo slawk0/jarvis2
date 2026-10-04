@@ -43,7 +43,7 @@
 		actions?: Snippet<[T]>;
 		/** Context-menu items for the row under the pointer. */
 		menu?: Snippet<[T]>;
-		/** Shown above the table while rows are selected. */
+		/** Shown below the rows while some are selected, so selecting never moves them. */
 		bulk?: Snippet<[T[]]>;
 		/** Filter text matched against every column value. */
 		search?: string;
@@ -183,7 +183,7 @@
 		<thead class="sticky top-0 z-10">
 			<tr>
 				{#if selectable}
-					<th class="bg-card border-b px-3 py-0" style="width: 2.25rem">
+					<th class="border-b bg-card px-3 py-0" style="width: 2.25rem">
 						<Checkbox
 							checked={allSelected}
 							indeterminate={!allSelected && selectedRows.length > 0}
@@ -196,16 +196,20 @@
 					{@const sortable = column.value !== undefined && column.sortable !== false}
 					<th
 						class={cn(
-							'bg-card text-muted-foreground h-8 border-b px-3 text-xs font-medium whitespace-nowrap',
+							'h-8 border-b bg-card px-3 text-xs font-medium whitespace-nowrap text-muted-foreground',
 							ALIGN[column.align ?? 'left'],
 							column.class
 						)}
-						aria-sort={sort?.key === column.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
+						aria-sort={sort?.key === column.key
+							? sort.dir === 'asc'
+								? 'ascending'
+								: 'descending'
+							: undefined}
 					>
 						{#if sortable}
 							<button
 								type="button"
-								class="hover:text-foreground inline-flex items-center gap-1"
+								class="inline-flex items-center gap-1 hover:text-foreground"
 								onclick={() => toggleSort(column)}
 							>
 								{column.label}
@@ -219,7 +223,7 @@
 					</th>
 				{/each}
 				{#if actions}
-					<th class="bg-card border-b px-3"></th>
+					<th class="border-b bg-card px-3"></th>
 				{/if}
 			</tr>
 		</thead>
@@ -232,20 +236,21 @@
 				{@const isBusy = busy?.has(key) ?? false}
 				<tr
 					class={cn(
-						'group/row hover:bg-muted/40 transition-colors',
+						'group/row transition-colors hover:bg-muted/40',
 						selected.has(key) && 'bg-primary/8 hover:bg-primary/12',
 						isBusy && 'opacity-60',
 						(onrowclick || onrowdblclick) && 'cursor-pointer',
 						rowClass?.(row)
 					)}
 					style="height: {rowHeight}px"
+					data-key={key}
 					aria-busy={isBusy}
 					onclick={(e) => onrowclick?.(row, e)}
 					ondblclick={() => onrowdblclick?.(row)}
 					oncontextmenu={() => (menuRow = row)}
 				>
 					{#if selectable}
-						<td class="border-border/50 border-b px-3">
+						<td class="border-b border-border/50 px-3">
 							<Checkbox
 								checked={selected.has(key)}
 								onclick={(e: MouseEvent) => {
@@ -260,7 +265,7 @@
 					{#each columns as column (column.key)}
 						<td
 							class={cn(
-								'border-border/50 selectable truncate border-b px-3',
+								'selectable truncate border-b border-border/50 px-3',
 								ALIGN[column.align ?? 'left'],
 								column.mono && 'font-mono text-xs',
 								column.class
@@ -270,10 +275,10 @@
 						</td>
 					{/each}
 					{#if actions}
-						<td class="border-border/50 border-b px-2 text-right whitespace-nowrap" style="width: 1%">
+						<td class="border-b border-border/50 px-2 text-right whitespace-nowrap" style="width: 1%">
 							<div class="flex items-center justify-end gap-0.5">
 								{#if isBusy}
-									<LoaderCircle class="text-muted-foreground mx-1.5 size-4 animate-spin" />
+									<LoaderCircle class="mx-1.5 size-4 animate-spin text-muted-foreground" />
 								{:else}
 									{@render actions(row)}
 								{/if}
@@ -291,20 +296,7 @@
 	</table>
 {/snippet}
 
-<div class={cn('bg-card flex min-h-0 flex-col overflow-hidden rounded-lg border', className)}>
-	{#if bulk && selectedRows.length > 0}
-		<div class="bg-primary/8 flex items-center gap-2 border-b px-3 py-1.5 text-sm">
-			<span class="text-muted-foreground mr-1">{selectedRows.length} selected</span>
-			{@render bulk(selectedRows)}
-			<button
-				type="button"
-				class="text-muted-foreground hover:text-foreground ml-auto text-xs"
-				onclick={() => (selected = new Set())}
-			>
-				Clear selection
-			</button>
-		</div>
-	{/if}
+<div class={cn('flex min-h-0 flex-col overflow-hidden rounded-lg border bg-card', className)}>
 	<div
 		bind:this={scroller}
 		class="min-h-0 flex-1 overflow-auto"
@@ -331,4 +323,17 @@
 			{@render body()}
 		{/if}
 	</div>
+	{#if bulk && selectedRows.length > 0}
+		<div class="flex items-center gap-2 border-t bg-primary/8 px-3 py-1.5 text-sm">
+			<span class="mr-1 text-muted-foreground">{selectedRows.length} selected</span>
+			{@render bulk(selectedRows)}
+			<button
+				type="button"
+				class="ml-auto text-xs text-muted-foreground hover:text-foreground"
+				onclick={() => (selected = new Set())}
+			>
+				Clear selection
+			</button>
+		</div>
+	{/if}
 </div>

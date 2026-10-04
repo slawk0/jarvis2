@@ -1,10 +1,25 @@
 <script lang="ts">
-	import StateView from '$lib/components/StateView.svelte';
 	import type { TabProps } from '$lib/workspace/registry';
+	import { workspace } from '$lib/workspace/workspace.svelte';
+	import FileBrowser from './FileBrowser.svelte';
 
-	let { visible: _visible, profile: _profile }: TabProps = $props();
+	let { visible }: TabProps = $props();
+	let browser = $state<FileBrowser | null>(null);
 
-	export function refresh(): void {}
+	// Other tabs can ask to show a folder.
+	$effect(() => {
+		if (!visible || !browser) return;
+		const request = workspace.takeRequest('files');
+		if (request) browser.goTo(request.path);
+	});
+
+	export function refresh(): void {
+		void browser?.refresh();
+	}
+
+	export function onReselect(): void {
+		browser?.closeEditor();
+	}
 </script>
 
-<StateView kind="empty" title="STUB" />
+<FileBrowser bind:this={browser} {visible} />

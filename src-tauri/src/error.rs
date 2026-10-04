@@ -62,17 +62,11 @@ impl AppError {
     pub fn new(code: ErrorCode, details: impl Into<String>) -> Self {
         let details = details.into();
         let details = details.trim();
-        Self {
-            code,
-            details: (!details.is_empty()).then(|| details.to_string()),
-        }
+        Self { code, details: (!details.is_empty()).then(|| details.to_string()) }
     }
 
     pub fn code(code: ErrorCode) -> Self {
-        Self {
-            code,
-            details: None,
-        }
+        Self { code, details: None }
     }
 
     pub fn invalid(details: impl Into<String>) -> Self {
@@ -149,9 +143,7 @@ impl From<russh_sftp::client::error::Error> for AppError {
                 let code = match status.status_code {
                     StatusCode::NoSuchFile => ErrorCode::NotFound,
                     StatusCode::PermissionDenied => ErrorCode::PermissionDenied,
-                    StatusCode::ConnectionLost | StatusCode::NoConnection => {
-                        ErrorCode::ConnectionLost
-                    }
+                    StatusCode::ConnectionLost | StatusCode::NoConnection => ErrorCode::ConnectionLost,
                     StatusCode::OpUnsupported => ErrorCode::Unsupported,
                     _ => ErrorCode::Sftp,
                 };
@@ -181,11 +173,7 @@ impl From<sqlx::Error> for AppError {
 
 impl From<reqwest::Error> for AppError {
     fn from(e: reqwest::Error) -> Self {
-        let code = if e.is_timeout() {
-            ErrorCode::Timeout
-        } else {
-            ErrorCode::Http
-        };
+        let code = if e.is_timeout() { ErrorCode::Timeout } else { ErrorCode::Http };
         Self::new(code, e.without_url().to_string())
     }
 }
@@ -209,14 +197,8 @@ mod tests {
     #[test]
     fn serialises_as_code_and_details() {
         let e = AppError::new(ErrorCode::SudoPasswordRequired, "");
-        assert_eq!(
-            serde_json::to_string(&e).unwrap(),
-            r#"{"code":"SUDO_PASSWORD_REQUIRED","details":null}"#
-        );
+        assert_eq!(serde_json::to_string(&e).unwrap(), r#"{"code":"SUDO_PASSWORD_REQUIRED","details":null}"#);
         let e = AppError::new(ErrorCode::CommandFailed, " boom \n");
-        assert_eq!(
-            serde_json::to_string(&e).unwrap(),
-            r#"{"code":"COMMAND_FAILED","details":"boom"}"#
-        );
+        assert_eq!(serde_json::to_string(&e).unwrap(), r#"{"code":"COMMAND_FAILED","details":"boom"}"#);
     }
 }

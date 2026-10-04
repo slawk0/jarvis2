@@ -4,6 +4,7 @@
 	import JobsPanel from '$lib/components/JobsPanel.svelte';
 	import SudoDialog from '$lib/components/SudoDialog.svelte';
 	import Toaster from '$lib/components/Toaster.svelte';
+	import TransferPanel from '$lib/components/TransferPanel.svelte';
 	import { api, toIpcError } from '$lib/ipc';
 	import HostKeyDialog from '$lib/screens/HostKeyDialog.svelte';
 	import Login from '$lib/screens/Login.svelte';
@@ -13,6 +14,7 @@
 	import { jobs } from '$lib/services/jobs.svelte';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/services/toast.svelte';
+	import { transfers } from '$lib/services/transfers.svelte';
 	import WorkspaceView from '$lib/workspace/WorkspaceView.svelte';
 
 	let ready = $state(false);
@@ -20,7 +22,7 @@
 	onMount(() => {
 		void (async () => {
 			try {
-				await Promise.all([settings.load(), jobs.init()]);
+				await Promise.all([settings.load(), jobs.init(), transfers.init()]);
 				await app.init();
 				for (const notice of await api.startupNotices()) toast.error(toIpcError(notice));
 			} catch (error) {
@@ -59,6 +61,7 @@
 <HostKeyDialog />
 <Settings />
 <UpdateDialog />
+<TransferPanel />
 <JobsPanel />
 <SudoDialog />
 <ConfirmHost />

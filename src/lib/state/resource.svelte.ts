@@ -138,3 +138,36 @@ export async function attempt(
 		return false;
 	}
 }
+
+/**
+ * Per-row busy state for tables: `busy.run(key, action)` marks the row busy
+ * while the action runs and reports failures as a toast.
+ */
+export class Busy {
+	keys = $state(new Set<string>());
+
+	has(key: string): boolean {
+		return this.keys.has(key);
+	}
+
+	get any(): boolean {
+		return this.keys.size > 0;
+	}
+
+	/** Resolves true when the action succeeded. */
+	async run(
+		key: string | string[],
+		action: () => Promise<unknown>,
+		onError: (e: IpcError) => void
+	): Promise<boolean> {
+		const keys = Array.isArray(key) ? key : [key];
+		this.keys = new Set([...this.keys, ...keys]);
+		try {
+			return await attempt(action, onError);
+		} finally {
+			const next = new Set(this.keys);
+			for (const k of keys) next.delete(k);
+			this.keys = next;
+		}
+	}
+}

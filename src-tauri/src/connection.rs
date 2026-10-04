@@ -49,9 +49,13 @@ impl SessionInfo {
 #[derive(Debug, Clone, Serialize, Type)]
 #[serde(tag = "status", rename_all = "camelCase")]
 pub enum ConnectOutcome {
-    Connected { session: SessionInfo },
+    Connected {
+        session: SessionInfo,
+    },
     /// The server's host key needs a decision before connecting.
-    HostKey { issue: HostKeyIssue },
+    HostKey {
+        issue: HostKeyIssue,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
@@ -73,7 +77,7 @@ pub struct ConnectionStatus {
 
 fn target_for(state: &AppState, profile_id: &str) -> AppResult<(crate::store::profiles::Profile, Target)> {
     let profile = state.profiles.get(profile_id)?;
-    state.secrets.migrate_legacy_profile(profile_id);
+    state.secrets.import_legacy_profile(profile_id);
     let auth = match profile.auth_type {
         AuthType::Password => Auth::Password(
             state
@@ -86,34 +90,23 @@ fn target_for(state: &AppState, profile_id: &str) -> AppResult<(crate::store::pr
             passphrase: state.secrets.get(profile_id, SECRET_PASSPHRASE)?,
         },
     };
-    let target = Target {
-        host: profile.host.clone(),
-        port: profile.port,
-        username: profile.username.clone(),
-        auth,
-    };
+    let target = Target { host: profile.host.clone(), port: profile.port, username: profile.username.clone(), auth };
     Ok((profile, target))
 }
 
 /// Connect to a profile, replacing any current session.
 #[tauri::command]
 #[specta::specta]
-pub async fn connect(
-    app: AppHandle,
-    state: State<'_, AppState>,
-    profile_id: String,
-) -> AppResult<ConnectOutcome> {
+pub async fn connect(app: AppHandle, state: State<'_, AppState>, profile_id: String) -> AppResult<ConnectOutcome> {
     let (profile, target) = target_for(&state, &profile_id)?;
     state.teardown().await;
     match Session::open(profile, target, state.known_hosts.clone()).await {
         Ok(session) => {
             state.set_session(session.clone());
             spawn_monitor(app, session.clone(), state.reconnect_now.clone());
-            Ok(ConnectOutcome::Connected {
-                session: SessionInfo::of(&session),
-            })
+            Ok(ConnectOutcome::Connected { session: SessionInfo::of(&session) })
         }
-        Err(ConnectFailure::HostKey(issue)) => Ok(ConnectOutcome::HostKey { issue }),
+        Err(ConnectFailure::HostKey(issue)) => Ok(ConnectOutcome::HostKey { issue: *issue }),
         Err(ConnectFailure::Other(e)) => Err(e),
     }
 }
@@ -141,13 +134,7 @@ pub fn reconnect_now(state: State<'_, AppState>) {
 
 fn spawn_monitor(app: AppHandle, session: Arc<Session>, wake: Arc<tokio::sync::Notify>) {
     let emit = move |app: &AppHandle, session: &Session, state, attempt, error| {
-        let _ = ConnectionStatus {
-            profile_id: session.profile.id.clone(),
-            state,
-            attempt,
-            error,
-        }
-        .emit(app);
+        let _ = ConnectionStatus { profile_id: session.profile.id.clone(), state, attempt, error }.emit(app);
     };
     tauri::async_runtime::spawn(async move {
         let mut strikes = 0;
@@ -156,11 +143,7 @@ fn spawn_monitor(app: AppHandle, session: Arc<Session>, wake: Arc<tokio::sync::N
                 _ = session.shutdown.cancelled() => return,
                 _ = tokio::time::sleep(HEARTBEAT) => {}
             }
-            let alive = !session.main_closed()
-                && session
-                    .exec_line("true", None, Duration::from_secs(10))
-                    .await
-                    .is_ok();
+            let alive = !session.main_closed() && session.exec_line("true", None, Duration::from_secs(10)).await.is_ok();
             if alive {
                 strikes = 0;
                 continue;
@@ -224,10 +207,7 @@ pub async fn sudo_status(state: State<'_, AppState>) -> AppResult<SudoStatus> {
         Mode::Password => SudoMode::Password,
         Mode::Unavailable => SudoMode::Unavailable,
     };
-    Ok(SudoStatus {
-        mode,
-        ready: session.sudo_ready().await,
-    })
+    Ok(SudoStatus { mode, ready: session.sudo_ready().await })
 }
 
 /// Verify the sudo password and cache it for the session (15 minutes).
@@ -257,17 +237,9 @@ pub fn known_hosts_list(state: State<'_, AppState>) -> AppResult<Vec<KnownHost>>
 /// previously trusted keys for that host (the "key changed" path).
 #[tauri::command]
 #[specta::specta]
-pub fn known_host_trust(
-    state: State<'_, AppState>,
-    host: String,
-    port: u32,
-    key: String,
-    replace: bool,
-) -> AppResult<()> {
+pub fn known_host_trust(state: State<'_, AppState>, host: String, port: u32, key: String, replace: bool) -> AppResult<()> {
     validate::host(&host)?;
-    state
-        .known_hosts
-        .trust(&host, validate::port(port)?, &key, replace)
+    state.known_hosts.trust(&host, validate::port(port)?, &key, replace)
 }
 
 #[tauri::command]

@@ -77,10 +77,7 @@ struct Line {
 
 impl KnownHosts {
     pub fn new(file: PathBuf) -> Self {
-        Self {
-            file,
-            lock: Mutex::new(()),
-        }
+        Self { file, lock: Mutex::new(()) }
     }
 
     fn read(&self) -> AppResult<Vec<Line>> {
@@ -98,21 +95,35 @@ impl KnownHosts {
                 }
                 let (pattern, key) = line.split_once(char::is_whitespace)?;
                 let key = PublicKey::from_openssh(key.trim()).ok()?;
-                Some(Line {
-                    pattern: pattern.to_string(),
-                    key,
-                })
+                Some(Line { pattern: pattern.to_string(), key })
             })
             .collect())
     }
 
+    /// Lines this store cannot interpret (comments, hashed hosts, markers).
+    /// They are carried over untouched on every rewrite.
+    fn foreign_lines(&self) -> Vec<String> {
+        let Ok(text) = std::fs::read_to_string(&self.file) else {
+            return Vec::new();
+        };
+        text.lines()
+            .filter(|line| {
+                let line = line.trim();
+                let parsed = line.split_once(char::is_whitespace).is_some_and(|(_, key)| PublicKey::from_openssh(key.trim()).is_ok());
+                !line.is_empty() && (line.starts_with('#') || !parsed)
+            })
+            .map(str::to_string)
+            .collect()
+    }
+
     fn write(&self, lines: &[Line]) -> AppResult<()> {
         let mut text = String::new();
+        for line in self.foreign_lines() {
+            text.push_str(&line);
+            text.push('\n');
+        }
         for line in lines {
-            let key = line
-                .key
-                .to_openssh()
-                .map_err(|e| AppError::internal(e.to_string()))?;
+            let key = line.key.to_openssh().map_err(|e| AppError::internal(e.to_string()))?;
             text.push_str(&format!("{} {}\n", line.pattern, key));
         }
         if let Some(dir) = self.file.parent() {
@@ -127,12 +138,7 @@ impl KnownHosts {
     pub fn check(&self, host: &str, port: u16, key: &PublicKey) -> AppResult<Verdict> {
         let _guard = self.lock.lock();
         let pattern = pattern(host, port);
-        let known: Vec<PublicKey> = self
-            .read()?
-            .into_iter()
-            .filter(|l| l.pattern == pattern)
-            .map(|l| l.key)
-            .collect();
+        let known: Vec<PublicKey> = self.read()?.into_iter().filter(|l| l.pattern == pattern).map(|l| l.key).collect();
         if known.is_empty() {
             Ok(Verdict::Unknown)
         } else if known.iter().any(|k| k.key_data() == key.key_data()) {
@@ -145,18 +151,14 @@ impl KnownHosts {
     /// Trust `key` for a host. With `replace`, previously trusted keys for
     /// that host are dropped (the explicit "key changed → replace" action).
     pub fn trust(&self, host: &str, port: u16, key: &str, replace: bool) -> AppResult<()> {
-        let key = PublicKey::from_openssh(key)
-            .map_err(|e| AppError::invalid(format!("Invalid host key: {e}")))?;
+        let key = PublicKey::from_openssh(key).map_err(|e| AppError::invalid(format!("Invalid host key: {e}")))?;
         let _guard = self.lock.lock();
         let pattern = pattern(host, port);
         let mut lines = self.read()?;
         if replace {
             lines.retain(|l| l.pattern != pattern);
         }
-        if !lines
-            .iter()
-            .any(|l| l.pattern == pattern && l.key.key_data() == key.key_data())
-        {
+        if !lines.iter().any(|l| l.pattern == pattern && l.key.key_data() == key.key_data()) {
             lines.push(Line { pattern, key });
         }
         self.write(&lines)
@@ -177,12 +179,7 @@ impl KnownHosts {
             .iter()
             .map(|l| {
                 let (host, port) = parse_pattern(&l.pattern);
-                KnownHost {
-                    host,
-                    port,
-                    key_type: l.key.algorithm().to_string(),
-                    fingerprint: fingerprint(&l.key),
-                }
+                KnownHost { host, port, key_type: l.key.algorithm().to_string(), fingerprint: fingerprint(&l.key) }
             })
             .collect())
     }
@@ -203,10 +200,8 @@ impl KnownHosts {
 mod tests {
     use super::*;
 
-    const KEY_A: &str =
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILM+rvN+ot98qgEN796jTiQfZfG1KaT0PtFDJ/XFSqti";
-    const KEY_B: &str =
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB9dG4kjRhQTtWTVzd2t27+t0DEHBPW7iOD23TUiYLio";
+    const KEY_A: &str = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILM+rvN+ot98qgEN796jTiQfZfG1KaT0PtFDJ/XFSqti";
+    const KEY_B: &str = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB9dG4kjRhQTtWTVzd2t27+t0DEHBPW7iOD23TUiYLio";
 
     fn store() -> (tempfile::TempDir, KnownHosts) {
         let dir = tempfile::tempdir().unwrap();
@@ -238,10 +233,7 @@ mod tests {
         }
         kh.trust("h", 2222, KEY_B, true).unwrap();
         assert_eq!(kh.check("h", 2222, &key(KEY_B)).unwrap(), Verdict::Trusted);
-        assert!(matches!(
-            kh.check("h", 2222, &key(KEY_A)).unwrap(),
-            Verdict::Changed(_)
-        ));
+        assert!(matches!(kh.check("h", 2222, &key(KEY_A)).unwrap(), Verdict::Changed(_)));
     }
 
     #[test]
@@ -257,6 +249,17 @@ mod tests {
         assert!(all[0].fingerprint.starts_with("SHA256:"));
         kh.forget("a.example", 22).unwrap();
         assert_eq!(kh.list().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn unknown_lines_survive_rewrites() {
+        let (dir, kh) = store();
+        let file = dir.path().join("known_hosts");
+        std::fs::write(&file, format!("# my comment\n|1|abc=|def= ssh-rsa notakey\nold.example {KEY_A}\n")).unwrap();
+        kh.trust("new.example", 22, KEY_B, false).unwrap();
+        kh.forget("old.example", 22).unwrap();
+        let text = std::fs::read_to_string(&file).unwrap();
+        assert_eq!(text, format!("# my comment\n|1|abc=|def= ssh-rsa notakey\nnew.example {KEY_B}\n"));
     }
 
     #[test]

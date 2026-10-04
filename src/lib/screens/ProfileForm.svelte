@@ -137,7 +137,13 @@
 		</Field>
 		<div class="grid grid-cols-[1fr_6rem] gap-3">
 			<Field label="Host" for="pf-host" required error={shown('host')}>
-				<Input id="pf-host" bind:value={host} placeholder="server.example.com" spellcheck="false" autocomplete="off" />
+				<Input
+					id="pf-host"
+					bind:value={host}
+					placeholder="server.example.com"
+					spellcheck="false"
+					autocomplete="off"
+				/>
 			</Field>
 			<Field label="Port" for="pf-port" error={shown('port')}>
 				<Input id="pf-port" bind:value={port} inputmode="numeric" />
@@ -148,7 +154,7 @@
 		</Field>
 
 		<Field label="Authentication">
-			<div class="bg-muted grid grid-cols-2 gap-1 rounded-lg p-1" role="radiogroup">
+			<div class="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1" role="radiogroup">
 				{#each [{ id: 'password', label: 'Password' }, { id: 'key', label: 'Private key' }] as option (option.id)}
 					<button
 						type="button"
@@ -156,7 +162,9 @@
 						aria-checked={authType === option.id}
 						class={cn(
 							'h-7 rounded-md text-sm transition-colors',
-							authType === option.id ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'
+							authType === option.id
+								? 'bg-background font-medium shadow-sm'
+								: 'text-muted-foreground hover:text-foreground'
 						)}
 						onclick={() => (authType = option.id as AuthType)}
 					>
@@ -178,28 +186,36 @@
 		{:else}
 			<Field label="Private key file" for="pf-key" required error={keyError ?? shown('keyPath')}>
 				<div class="flex gap-2">
-					<Input id="pf-key" bind:value={keyPath} placeholder="~/.ssh/id_ed25519" spellcheck="false" autocomplete="off" />
+					<Input
+						id="pf-key"
+						bind:value={keyPath}
+						placeholder="~/.ssh/id_ed25519"
+						spellcheck="false"
+						autocomplete="off"
+					/>
 					<Button variant="outline" onclick={browse}>Browse…</Button>
 				</div>
 			</Field>
 			<Field
 				label="Key passphrase"
 				for="pf-passphrase"
-				hint={editing?.hasPassphrase ? 'Leave empty to keep the stored passphrase.' : 'Only if the key is encrypted.'}
+				hint={editing?.hasPassphrase
+					? 'Leave empty to keep the stored passphrase.'
+					: 'Only if the key is encrypted.'}
 			>
 				<Input id="pf-passphrase" type="password" bind:value={passphrase} autocomplete="off" />
 			</Field>
 		{/if}
 
 		{#if hasStoredSecret}
-			<label class="text-muted-foreground flex items-center gap-2 text-xs">
+			<label class="flex items-center gap-2 text-xs text-muted-foreground">
 				<Checkbox bind:checked={clearSecrets} />
 				Clear the stored {authType === 'password' ? 'password' : 'passphrase'} from the system keyring
 			</label>
 		{/if}
 
 		{#if formError}
-			<p class="text-destructive text-xs" role="alert">{formError}</p>
+			<p class="text-xs text-destructive" role="alert">{formError}</p>
 		{/if}
 	</form>
 	{#snippet footer()}
