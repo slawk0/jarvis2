@@ -111,4 +111,4 @@ world-readable file. Backups and restic send `export NAME='value'` lines on stdi
 
 Version in `package.json` → `pnpm version:sync [x.y.z]` → tag `vX.Y.Z` → the Release workflow
 builds, signs and publishes. The updater endpoint and public key are in
-`src-tauri/tauri.conf.json`; the endpoint is a placeholder until the repository URL is known.
+`src-tauri/tauri.conf.json`.

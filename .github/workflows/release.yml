@@ -18,14 +18,15 @@ jobs:
         include:
           - os: windows-latest
             bundles: nsis,msi
-          - os: ubuntu-22.04
+          - os: self-hosted
             bundles: deb,rpm,appimage
-    runs-on: ${{ matrix.os }}
+            linux_deps: true
+    runs-on: ${{ matrix.linux_deps && fromJSON('["self-hosted", "Linux"]') || matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Linux build dependencies
-        if: startsWith(matrix.os, 'ubuntu')
+        if: matrix.linux_deps
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libdbus-1-dev patchelf rpm
