@@ -69,6 +69,11 @@ export const commands = {
 	 *  (log downloads, query exports).
 	 */
 	saveTextFile: (path: string, content: string) => __TAURI_INVOKE<null>("save_text_file", { path, content }),
+	/**
+	 *  Paint the native title bar in the app's background colour so it blends
+	 *  with the UI. Only Windows 11 supports this; elsewhere it does nothing.
+	 */
+	titleBarColor: (red: number, green: number, blue: number) => __TAURI_INVOKE<void>("title_bar_color", { red, green, blue }),
 	jobCancel: (jobId: string) => __TAURI_INVOKE<void>("job_cancel", { jobId }),
 	depsCheck: (tools: Tool[]) => __TAURI_INVOKE<DepsReport>("deps_check", { tools }),
 	/**  Install a tool as a streamed job; returns the job id. */

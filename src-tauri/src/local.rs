@@ -185,6 +185,27 @@ pub fn secret_clear(state: State<'_, AppState>, profile_id: Option<String>, name
     }
 }
 
+/// Paint the native title bar in the app's background colour so it blends
+/// with the UI. Only Windows 11 supports this; elsewhere it does nothing.
+#[tauri::command]
+#[specta::specta]
+#[cfg_attr(not(windows), allow(unused_variables))]
+pub fn title_bar_color(window: tauri::WebviewWindow, red: u8, green: u8, blue: u8) {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::Graphics::Dwm::{DwmSetWindowAttribute, DWMWA_CAPTION_COLOR};
+
+        let Ok(hwnd) = window.hwnd() else { return };
+        // COLORREF is 0x00BBGGRR.
+        let color = u32::from(red) | u32::from(green) << 8 | u32::from(blue) << 16;
+        // SAFETY: `hwnd` is a live window handle and `color` outlives the call.
+        // Windows 10 rejects the attribute; the title bar then keeps its colour.
+        unsafe {
+            DwmSetWindowAttribute(hwnd.0 as _, DWMWA_CAPTION_COLOR as u32, (&raw const color).cast(), 4);
+        }
+    }
+}
+
 /// Write text to a local file the user picked in a save dialog
 /// (log downloads, query exports).
 #[tauri::command]

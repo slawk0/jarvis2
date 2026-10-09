@@ -79,6 +79,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             local::secret_exists,
             local::secret_clear,
             local::save_text_file,
+            local::title_bar_color,
             jobs::job_cancel,
             deps::deps_check,
             deps::deps_install,

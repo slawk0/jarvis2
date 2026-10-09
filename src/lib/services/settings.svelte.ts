@@ -1,4 +1,5 @@
 /** Global app settings, loaded once and saved (debounced) on change. */
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { commands, type AppSettings } from '$lib/ipc/bindings';
 import { debounce } from '$lib/utils';
 import { toast } from './toast.svelte';
@@ -30,6 +31,15 @@ export const DEFAULT_SETTINGS: AppSettings = {
 	pangolin: { apiUrl: 'https://api.pangolin.net', basePath: '', orgId: '' }
 };
 
+/** The current `--background` as RGB. A canvas converts it from oklch. */
+function backgroundRgb(): [number, number, number] {
+	const ctx = document.createElement('canvas').getContext('2d')!;
+	ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--background');
+	ctx.fillRect(0, 0, 1, 1);
+	const [red, green, blue] = ctx.getImageData(0, 0, 1, 1).data;
+	return [red, green, blue];
+}
+
 class SettingsService {
 	value = $state<AppSettings>(structuredClone(DEFAULT_SETTINGS));
 	loaded = $state(false);
@@ -59,6 +69,10 @@ class SettingsService {
 
 	applyTheme(): void {
 		document.documentElement.classList.toggle('dark', this.isDark);
+		// The native title bar follows the app theme instead of the system one.
+		const theme = this.value.theme;
+		void getCurrentWindow().setTheme(theme === 'system' ? null : theme);
+		void commands.titleBarColor(...backgroundRgb());
 	}
 }
 
