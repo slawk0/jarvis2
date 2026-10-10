@@ -6,6 +6,14 @@ the server: Jarvis runs ordinary commands over SSH and parses their output.
 
 Built with Tauri 2, Rust, SvelteKit (static SPA), Svelte 5 and Tailwind 4.
 
+## Documentation
+
+- [User guide](docs/user-guide.md): installing, connecting, the workspace, sudo, jobs, settings.
+- [Tab reference](docs/tabs.md): what each tab does and what it changes on the server.
+- [Developer guide](docs/development.md): architecture, security model, testing, releases.
+- [IPC reference](docs/ipc-reference.md): every backend command, event and error code.
+- [Changelog](CHANGELOG.md).
+
 ## Features
 
 | Category       | Tabs                                                                                        |
@@ -61,6 +69,7 @@ pnpm tauri dev
 | `pnpm format`                               | Format the frontend with Prettier                           |
 | `pnpm test`                                 | Frontend unit tests (Vitest)                                |
 | `pnpm bindings`                             | Regenerate `src/lib/ipc/bindings.ts` from the Rust commands |
+| `pnpm docs:ipc`                             | Regenerate `docs/ipc-reference.md` from the bindings        |
 | `cargo test`                                | Backend unit tests (run inside `src-tauri/`)                |
 | `cargo clippy --all-targets -- -D warnings` | Backend lints                                               |
 | `pnpm tauri build`                          | Production bundles                                          |
@@ -104,7 +113,7 @@ src-tauri/src/            Rust backend, one module per domain
 The frontend never builds shell commands. It calls typed commands (`api.dockerContainers()`,
 `api.backupRun(id)`), and each backend module quotes its arguments, runs the command and parses
 the result. Errors are a fixed set of codes that the frontend maps to messages. More detail is
-in [CLAUDE.md](CLAUDE.md).
+in the [developer guide](docs/development.md).
 
 ## Releases
 

@@ -10,6 +10,7 @@ Everything in the repo is in English.
 pnpm tauri dev                 # run the app
 pnpm check && pnpm lint && pnpm test
 pnpm bindings                  # regenerate src/lib/ipc/bindings.ts after any IPC change
+pnpm docs:ipc                  # regenerate docs/ipc-reference.md after pnpm bindings
 cd src-tauri && cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check
 ```
 

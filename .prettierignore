@@ -6,3 +6,4 @@ src-tauri/gen/
 src/lib/ipc/bindings.ts
 src/lib/components/ui/
 pnpm-lock.yaml
+docs/ipc-reference.md

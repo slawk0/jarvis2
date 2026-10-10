@@ -14,7 +14,8 @@
 		"test": "vitest run",
 		"tauri": "tauri",
 		"bindings": "cargo test --manifest-path src-tauri/Cargo.toml --lib export_bindings",
-		"version:sync": "node scripts/sync-version.mjs"
+		"version:sync": "node scripts/sync-version.mjs",
+		"docs:ipc": "node scripts/ipc-docs.mjs"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
