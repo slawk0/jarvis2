@@ -2,6 +2,13 @@
 
 All notable changes to Jarvis Server Manager. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.1.3 - 2026-10-10
+
+### Added
+
+- Documentation: a user guide, a reference of all tabs, a developer guide and an IPC reference in
+  `docs/`.
+
 ## 0.1.2 - 2026-10-09
 
 ### Changed

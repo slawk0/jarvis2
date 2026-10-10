@@ -1,6 +1,6 @@
 [package]
 name = "jarvis-server-manager"
-version = "0.1.2"
+version = "0.1.3"
 description = "Desktop GUI for administering Linux servers over SSH"
 edition = "2021"
 rust-version = "1.85"
