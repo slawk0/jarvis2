@@ -90,9 +90,46 @@
 		term?.focus();
 	}
 
-	async function copySelection(): Promise<void> {
+	let clipboardWrites: Promise<unknown> = Promise.resolve();
+
+	/**
+	 * Clipboard writes are serialised and retried: the Windows clipboard is exclusive, so
+	 * overlapping writes (or another app holding it for a moment) fail intermittently.
+	 */
+	function copySelection(): Promise<void> {
 		const text = term?.getSelection();
-		if (text) await writeText(text);
+		if (!text) return Promise.resolve();
+		const write = clipboardWrites.then(async () => {
+			for (let attempt = 1; ; attempt++) {
+				try {
+					await writeText(text);
+					return;
+				} catch (error) {
+					if (attempt === 4) {
+						toast.error(String(error), 'Could not copy to the clipboard');
+						return;
+					}
+					await new Promise((resolve) => setTimeout(resolve, 50 * attempt));
+				}
+			}
+		});
+		clipboardWrites = write;
+		return write;
+	}
+
+	function openLink(uri: string): void {
+		openUrl(uri).catch((error) => toast.error(String(error), 'Could not open the link'));
+	}
+
+	/** Copy on select waits for the mouse button, so a drag copies once, not per selection change. */
+	let pressedInside = false;
+
+	function onWindowMouseUp(): void {
+		const wasInside = pressedInside;
+		pressedInside = false;
+		if (wasInside && settings.value.terminal.copyOnSelect && term?.hasSelection()) {
+			void copySelection();
+		}
 	}
 
 	async function paste(): Promise<void> {
@@ -166,13 +203,11 @@
 		});
 		fit = new FitAddon();
 		term.loadAddon(fit);
-		term.loadAddon(new WebLinksAddon((_event, uri) => void openUrl(uri)));
+		term.loadAddon(new WebLinksAddon((_event, uri) => openLink(uri)));
 		term.open(host!);
 
 		term.onData(send);
-		term.onSelectionChange(() => {
-			if (settings.value.terminal.copyOnSelect) void copySelection();
-		});
+		window.addEventListener('mouseup', onWindowMouseUp);
 		term.onBell(bell);
 		term.attachCustomKeyEventHandler((e) => {
 			if (e.type !== 'keydown' || !e.ctrlKey || e.altKey) return true;
@@ -213,6 +248,7 @@
 
 		return () => {
 			observer.disconnect();
+			window.removeEventListener('mouseup', onWindowMouseUp);
 			resize.cancel();
 			void offData.then((off) => off());
 			void offExit.then((off) => off());
@@ -253,6 +289,7 @@
 	}
 
 	function onMouseDown(e: MouseEvent): void {
+		if (e.button === 0) pressedInside = true;
 		// A program that tracks the mouse (vim, htop) gets the middle button itself.
 		if (e.button !== 1 || !settings.value.terminal.middleClickPaste) return;
 		if (term?.modes.mouseTrackingMode !== 'none') return;

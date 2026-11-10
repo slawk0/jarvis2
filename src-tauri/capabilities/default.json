@@ -19,6 +19,7 @@
 		"dialog:allow-save",
 		"notification:default",
 		"opener:allow-open-url",
+		"opener:allow-default-urls",
 		"process:allow-restart",
 		"updater:default",
 		"window-state:default"
