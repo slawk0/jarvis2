@@ -2,6 +2,14 @@
 
 All notable changes to Jarvis Server Manager. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.1.4 - 2026-11-10
+
+### Fixed
+
+- Terminal: links now open in the default browser (the opener permission had no URL scope).
+- Terminal: copying no longer fails intermittently; clipboard writes are serialised, retried and
+  copy on select runs once per selection.
+
 ## 0.1.3 - 2026-10-10
 
 ### Added
