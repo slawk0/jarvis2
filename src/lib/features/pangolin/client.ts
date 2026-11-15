@@ -90,8 +90,10 @@ export async function fetchAnalytics(hours: number, filters: AnalyticsFilters = 
 
 /**
  * Fetch every item of a list endpoint. Pangolin pages either with
- * `page`/`pageSize` or with `limit`/`offset`; both are sent and paging stops
- * when a page comes back short or repeats.
+ * `page`/`pageSize` or (older endpoints) with `limit`/`offset`, and current
+ * versions reject unknown query keys, so `page`/`pageSize` is tried first and
+ * `limit`/`offset` only when that request fails. Paging stops when a page
+ * comes back short or repeats.
  */
 export async function listAll(
 	path: string,
@@ -102,10 +104,27 @@ export async function listAll(
 	const MAX_PAGES = 50;
 	const all: Json[] = [];
 	let firstId = '';
-	for (let page = 1; page <= MAX_PAGES; page++) {
-		const data = await pangolin('GET', path, {
-			query: { ...query, pageSize: PAGE, page, limit: PAGE, offset: (page - 1) * PAGE }
+	let style: 'page' | 'offset' | null = null;
+	const fetchPage = (page: number, as: 'page' | 'offset') =>
+		pangolin('GET', path, {
+			query: {
+				...query,
+				...(as === 'page' ? { pageSize: PAGE, page } : { limit: PAGE, offset: (page - 1) * PAGE })
+			}
 		});
+	for (let page = 1; page <= MAX_PAGES; page++) {
+		let data: Json;
+		if (style) {
+			data = await fetchPage(page, style);
+		} else {
+			try {
+				data = await fetchPage(page, 'page');
+				style = 'page';
+			} catch {
+				data = await fetchPage(page, 'offset');
+				style = 'offset';
+			}
+		}
 		const items = list(data, ...keys);
 		const id = JSON.stringify(items[0] ?? null);
 		// A server that ignores paging returns the same first page again.
@@ -202,6 +221,8 @@ export interface LogPage {
 	entries: LogEntry[];
 	/** Total matching rows when the server reports it. */
 	total: number | null;
+	/** Resources that appear in the matching log (`filterAttributes`), when the server reports them. */
+	resources: { id: string; name: string }[];
 }
 
 /** One page of the request audit log, newest first. */
@@ -218,9 +239,46 @@ export async function fetchLogs(
 	const rows = list(data, 'log', 'logs', 'requests');
 	const pagination = (data.pagination ?? {}) as Json;
 	const total = pagination.total != null ? num(pagination.total) : null;
+	const attributes = (data.filterAttributes ?? {}) as Json;
+	const resources = list(attributes.resources)
+		.map((r) => ({ id: str(pick(r, 'id', 'resourceId')), name: str(r.name) }))
+		.filter((r) => r.id);
 	// A server without paging support returns everything: page locally.
 	const paged = rows.length > limit ? rows.slice(offset, offset + limit) : rows;
-	return { entries: paged.map(toLogEntry), total: rows.length > limit ? rows.length : total };
+	return { entries: paged.map(toLogEntry), total: rows.length > limit ? rows.length : total, resources };
+}
+
+/** Every matching log row up to `cap`, newest first; `capped` when there were more. */
+export async function fetchAllLogs(
+	start: Date,
+	end: Date,
+	filters: LogFilters,
+	cap = 5000
+): Promise<{ entries: LogEntry[]; capped: boolean; resources: { id: string; name: string }[] }> {
+	const PAGE = 1000;
+	const entries: LogEntry[] = [];
+	let resources: { id: string; name: string }[] = [];
+	let capped = false;
+	for (let offset = 0; offset < cap; offset += PAGE) {
+		const page = await fetchLogs(start, end, filters, PAGE, offset);
+		entries.push(...page.entries);
+		if (offset === 0) resources = page.resources;
+		if (page.entries.length < PAGE) break;
+		capped = offset + PAGE >= cap;
+	}
+	return { entries, capped, resources };
+}
+
+/** IPs typed as a list (commas or spaces); a trailing `*` matches a prefix, e.g. `10.0.*`. */
+export function parseIpList(text: string): string[] {
+	return text
+		.split(/[\s,]+/)
+		.map((ip) => ip.trim())
+		.filter(Boolean);
+}
+
+export function ipMatches(ip: string, patterns: string[]): boolean {
+	return patterns.some((p) => (p.endsWith('*') ? ip.startsWith(p.slice(0, -1)) : ip === p));
 }
 
 /**
@@ -235,15 +293,7 @@ export async function analyticsFromLogs(
 ): Promise<Analytics & { capped: boolean }> {
 	const end = new Date();
 	const start = new Date(end.getTime() - hours * 3_600_000);
-	const rows: LogEntry[] = [];
-	const PAGE = 1000;
-	let capped = false;
-	for (let offset = 0; offset < cap; offset += PAGE) {
-		const page = await fetchLogs(start, end, filters, PAGE, offset);
-		rows.push(...page.entries);
-		if (page.entries.length < PAGE) break;
-		capped = offset + PAGE >= cap;
-	}
+	const { entries: rows, capped } = await fetchAllLogs(start, end, filters, cap);
 	const kept = exclude.length ? rows.filter((r) => !exclude.includes(r.resource)) : rows;
 	const byDay = hours > 48;
 	const countries = new Map<string, { code: string; count: number; blocked: number }>();

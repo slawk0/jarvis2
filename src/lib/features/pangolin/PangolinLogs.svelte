@@ -1,4 +1,8 @@
-<!-- Request audit log: date range, per-column filters, paging and a detail drawer. -->
+<!--
+	Request audit log: date range, per-column filters, paging and a detail drawer.
+	IP filters are applied here (the API has no exclude filter), over at most
+	5000 matching rows that are then paged locally.
+-->
 <script lang="ts">
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -9,11 +13,23 @@
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import SelectField from '$lib/components/SelectField.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import * as ContextMenu from '$lib/components/ui/context-menu';
 	import { Input } from '$lib/components/ui/input';
 	import { formatDateTime, formatNumber } from '$lib/format';
 	import { toIpcError, type IpcError } from '$lib/ipc';
 	import { cn } from '$lib/utils';
-	import { countryName, fetchLogs, listAll, orgPath, str, type Json, type LogEntry } from './client';
+	import {
+		countryName,
+		fetchAllLogs,
+		fetchLogs,
+		ipMatches,
+		listAll,
+		orgPath,
+		parseIpList,
+		str,
+		type Json,
+		type LogEntry
+	} from './client';
 
 	interface Props {
 		visible: boolean;
@@ -37,6 +53,8 @@
 	let path = $state('');
 	let reason = $state('');
 	let actor = $state('');
+	let ips = $state('');
+	let excludedIps = $state('');
 	let resources = $state<{ id: string; name: string }[]>([]);
 
 	let page = $state(1);
@@ -45,10 +63,25 @@
 	let loading = $state(false);
 	let error = $state<IpcError | null>(null);
 	let detail = $state<LogEntry | null>(null);
+	/** All rows kept by the IP filters (paged locally), or null when no IP filter is set. */
+	let ipFiltered = $state<LogEntry[] | null>(null);
+	let capped = $state(false);
 	let seq = 0;
 
 	const pages = $derived(total === null ? null : Math.max(1, Math.ceil(total / PAGE)));
 	const hasNext = $derived(pages === null ? entries.length === PAGE : page < pages);
+
+	/** Adds resources to the filter list; the log also names resources the resource list may not return. */
+	function addResources(found: { id: string; name: string }[]): void {
+		const known = new Set(resources.map((r) => r.id));
+		const fresh = found.filter((r) => !known.has(r.id)).map((r) => ({ id: r.id, name: r.name || r.id }));
+		if (fresh.length) resources = [...resources, ...fresh].sort((a, b) => a.name.localeCompare(b.name));
+	}
+
+	function showLocalPage(): void {
+		entries = (ipFiltered ?? []).slice((page - 1) * PAGE, page * PAGE);
+		total = ipFiltered?.length ?? 0;
+	}
 
 	async function load(): Promise<void> {
 		const current = ++seq;
@@ -56,25 +89,36 @@
 		try {
 			const start = from ? new Date(from) : new Date(Date.now() - 7 * 86_400_000);
 			const end = to ? new Date(to) : new Date();
-			const result = await fetchLogs(
-				start,
-				end,
-				{
-					action: action || undefined,
-					method: method || undefined,
-					resourceId: resource || undefined,
-					location: location.trim().toUpperCase() || undefined,
-					host: host.trim() || undefined,
-					path: path.trim() || undefined,
-					reason: reason.trim() || undefined,
-					actor: actor.trim() || undefined
-				},
-				PAGE,
-				(page - 1) * PAGE
-			);
-			if (current !== seq) return;
-			entries = result.entries;
-			total = result.total;
+			const filters = {
+				action: action || undefined,
+				method: method || undefined,
+				resourceId: resource || undefined,
+				location: location.trim().toUpperCase() || undefined,
+				host: host.trim() || undefined,
+				path: path.trim() || undefined,
+				reason: reason.trim() || undefined,
+				actor: actor.trim() || undefined
+			};
+			const only = parseIpList(ips);
+			const excluded = parseIpList(excludedIps);
+			if (only.length || excluded.length) {
+				const result = await fetchAllLogs(start, end, filters);
+				if (current !== seq) return;
+				ipFiltered = result.entries.filter(
+					(e) => (!only.length || ipMatches(e.ip, only)) && !ipMatches(e.ip, excluded)
+				);
+				capped = result.capped;
+				addResources(result.resources);
+				showLocalPage();
+			} else {
+				const result = await fetchLogs(start, end, filters, PAGE, (page - 1) * PAGE);
+				if (current !== seq) return;
+				ipFiltered = null;
+				capped = false;
+				addResources(result.resources);
+				entries = result.entries;
+				total = result.total;
+			}
 			error = null;
 		} catch (raw) {
 			if (current === seq) error = toIpcError(raw);
@@ -89,13 +133,25 @@
 	}
 
 	function clear(): void {
-		action = method = resource = location = host = path = reason = actor = '';
+		action = method = resource = location = host = path = reason = actor = ips = excludedIps = '';
 		apply();
 	}
 
 	function go(next: number): void {
 		page = Math.max(1, next);
-		void load();
+		if (ipFiltered) showLocalPage();
+		else void load();
+	}
+
+	function onlyIp(ip: string): void {
+		ips = ip;
+		apply();
+	}
+
+	function excludeIp(ip: string): void {
+		const list = parseIpList(excludedIps);
+		if (!list.includes(ip)) excludedIps = [...list, ip].join(', ');
+		apply();
 	}
 
 	let started = false;
@@ -104,7 +160,7 @@
 		started = true;
 		void load();
 		listAll(orgPath('/resources'), ['resources']).then(
-			(list) => (resources = list.map((r) => ({ id: str(r.resourceId), name: str(r.name) }))),
+			(list) => addResources(list.map((r) => ({ id: str(r.resourceId), name: str(r.name) }))),
 			() => {}
 		);
 	});
@@ -203,6 +259,20 @@
 		<Input bind:value={path} placeholder="Path" class="h-8 w-36" spellcheck="false" />
 		<Input bind:value={reason} placeholder="Reason code" class="h-8 w-28" />
 		<Input bind:value={actor} placeholder="Actor" class="h-8 w-32" spellcheck="false" />
+		<Input
+			bind:value={ips}
+			placeholder="IP"
+			title="Show only these IPs (comma separated; 10.0.* matches a prefix)"
+			class="h-8 w-36 font-mono text-xs placeholder:font-sans"
+			spellcheck="false"
+		/>
+		<Input
+			bind:value={excludedIps}
+			placeholder="Exclude IPs"
+			title="Hide these IPs (comma separated; 10.0.* matches a prefix)"
+			class="h-8 w-44 font-mono text-xs placeholder:font-sans"
+			spellcheck="false"
+		/>
 		<Button type="submit" size="sm">Apply</Button>
 		<Button type="button" variant="ghost" size="sm" onclick={clear}>Clear</Button>
 		<span class="flex-1"></span>
@@ -221,6 +291,12 @@
 		onrowclick={(e) => (detail = e)}
 		class="flex-1"
 	>
+		{#snippet menu(e)}
+			<ContextMenu.Item onclick={() => (detail = e)}>Details</ContextMenu.Item>
+			<ContextMenu.Separator />
+			<ContextMenu.Item disabled={!e.ip} onclick={() => onlyIp(e.ip)}>Show only {e.ip}</ContextMenu.Item>
+			<ContextMenu.Item disabled={!e.ip} onclick={() => excludeIp(e.ip)}>Exclude {e.ip}</ContextMenu.Item>
+		{/snippet}
 		{#snippet cell(e, column)}
 			{#if column.key === 'time'}{e.time ? formatDateTime(e.time) : ''}
 			{:else if column.key === 'action'}
@@ -244,6 +320,11 @@
 				? `${entries.length} shown`
 				: `${formatNumber(total)} request${total === 1 ? '' : 's'}`}</span
 		>
+		{#if capped}
+			<span class="text-warning" title="IP filters are applied to the newest 5000 matching requests"
+				>IP filters searched only the newest 5000 requests; narrow the date range for more</span
+			>
+		{/if}
 		<span class="flex-1"></span>
 		<IconButton label="Previous page" disabled={page <= 1} onclick={() => go(page - 1)}
 			><ChevronLeft /></IconButton

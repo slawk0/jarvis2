@@ -221,22 +221,22 @@ Settings apply to the whole app, except alerts, which are saved per server.
 
 Press `Ctrl+Shift+H` to see this list in the app.
 
-| Keys                | Action                           |
-| ------------------- | -------------------------------- |
-| `Ctrl+N`            | Split the focused pane           |
-| `Ctrl+W`            | Close the focused pane           |
-| `Ctrl+1` … `Ctrl+4` | Focus pane 1–4 (reading order)   |
-| `Ctrl+Tab`          | Next tab                         |
-| `Ctrl+Shift+Tab`    | Previous tab                     |
-| `Ctrl+Shift+T`      | Open Terminal                    |
-| `Ctrl+Alt+B`        | Toggle sidebar                   |
-| `Ctrl+Shift+H`      | Show keyboard shortcuts          |
-| `Ctrl+Shift+C`      | Copy in terminal                 |
-| `Ctrl+Shift+V`      | Paste in terminal                |
-| `Ctrl+S`            | Save in editors                  |
-| `Ctrl+Enter`        | Run the script in the SQL editor |
-| Mouse back button   | Go back                          |
-| `Esc`               | Close the topmost dialog or menu |
+| Keys                | Action                                      |
+| ------------------- | ------------------------------------------- |
+| `Ctrl+N`            | Split the focused pane (outside a terminal) |
+| `Ctrl+W`            | Close the focused pane (outside a terminal) |
+| `Ctrl+1` … `Ctrl+4` | Focus pane 1–4 (reading order)              |
+| `Ctrl+Tab`          | Next tab                                    |
+| `Ctrl+Shift+Tab`    | Previous tab                                |
+| `Ctrl+Shift+T`      | Open Terminal                               |
+| `Ctrl+Alt+B`        | Toggle sidebar                              |
+| `Ctrl+Shift+H`      | Show keyboard shortcuts                     |
+| `Ctrl+Shift+C`      | Copy in terminal                            |
+| `Ctrl+Shift+V`      | Paste in terminal                           |
+| `Ctrl+S`            | Save in editors                             |
+| `Ctrl+Enter`        | Run the script in the SQL editor            |
+| Mouse back button   | Go back                                     |
+| `Esc`               | Close the topmost dialog or menu            |
 
 ## Updates
 

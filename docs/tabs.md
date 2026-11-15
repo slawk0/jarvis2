@@ -38,7 +38,9 @@ connection, so a busy terminal does not slow the rest of the app down.
   the [Docker](#docker) tab (**Shell**).
 - **Restart session** reconnects a terminal that ended.
 - **Edit file** opens a file on the server in the editor. You can also select an absolute path in
-  the terminal and choose **Open selected path in editor** from the context menu.
+  the terminal and choose **Open selected path in editor** from the context menu. Each open file
+  gets its own tab next to the shells, so you can switch to a terminal and back without losing
+  unsaved changes.
 - **Saved commands** is a per-server list of commands you can run in the terminal with one click. It
   starts with a few examples (`df -h`, `free -m`, `docker ps`, …).
 - **Open in external terminal** starts your operating system's terminal with an `ssh` session to the
@@ -286,7 +288,9 @@ countries, for the last 24 hours, 7 days or 30 days. Filters by resource, action
 are computed from the newest 5,000 log entries of the range.
 
 **Logs.** The request audit log with a date range, filters (action, method, resource, country, host,
-path, reason, actor), paging, and a detail view per request.
+path, reason, actor), paging, and a detail view per request. **IP** shows only the listed addresses
+and **Exclude IPs** hides them (comma separated; `10.0.*` matches a prefix); a row's context menu
+offers both for its IP. IP filters apply to the newest 5,000 matching requests.
 
 **Resources.**
 

@@ -30,9 +30,11 @@
 		aftersave?: () => Promise<void>;
 		language?: string;
 		readonly?: boolean;
+		/** False while the editor is kept open but hidden (e.g. behind a terminal tab). */
+		active?: boolean;
 	}
 
-	let { path, onclose, read, write, aftersave, language, readonly = false }: Props = $props();
+	let { path, onclose, read, write, aftersave, language, readonly = false, active = true }: Props = $props();
 
 	const pane = usePane();
 	let content = $state('');
@@ -94,7 +96,8 @@
 		if (autoSave && untrack(() => dirty)) scheduleAutoSave();
 	});
 
-	async function close(): Promise<void> {
+	/** Closes the editor, asking first when there are unsaved changes. */
+	export async function close(): Promise<void> {
 		if (dirty) {
 			const discard = await confirm({
 				title: 'Discard unsaved changes?',
@@ -117,7 +120,10 @@
 		pane?.setLive(`editor:${path}`, dirty ? `Unsaved changes in ${path}` : null);
 		return () => pane?.setLive(`editor:${path}`, null);
 	});
-	$effect(() => pane?.pushBack('Close editor', () => void close()));
+	$effect(() => {
+		if (!active) return;
+		return pane?.pushBack('Close editor', () => void close());
+	});
 </script>
 
 <div class="flex h-full min-h-0 flex-col">

@@ -1,8 +1,13 @@
-<!-- Remote path input with autocomplete (arrows / Tab / Enter / Esc). -->
+<!--
+	Remote path input with autocomplete (arrows / Tab / Enter / Esc). The suggestion
+	list is a portalled popover so a scrolling or clipping parent (a modal body, a
+	toolbar) cannot hide it.
+-->
 <script lang="ts">
 	import Folder from '@lucide/svelte/icons/folder';
 	import FileIcon from '@lucide/svelte/icons/file';
 	import { Input } from '$lib/components/ui/input';
+	import * as Popover from '$lib/components/ui/popover';
 	import { apiQuiet } from '$lib/ipc';
 	import { cn, debounce } from '$lib/utils';
 
@@ -27,19 +32,20 @@
 		onsubmit
 	}: Props = $props();
 
+	let input = $state<HTMLInputElement | null>(null);
 	let suggestions = $state<string[]>([]);
 	let open = $state(false);
 	let active = $state(-1);
 	let seq = 0;
 
-	const fetchSuggestions = debounce(async (input: string) => {
+	const fetchSuggestions = debounce(async (text: string) => {
 		const mine = ++seq;
 		try {
-			const found = await apiQuiet.filesComplete(input, dirsOnly);
+			const found = await apiQuiet.filesComplete(text, dirsOnly);
 			if (mine !== seq) return;
-			suggestions = found.filter((s) => s !== input);
+			suggestions = found.filter((s) => s !== text);
 			active = -1;
-			open = suggestions.length > 0;
+			open = suggestions.length > 0 && document.activeElement === input;
 		} catch {
 			suggestions = [];
 			open = false;
@@ -89,32 +95,41 @@
 	}
 </script>
 
-<div class={cn('relative', className)}>
-	<Input
-		{id}
-		bind:value
-		{placeholder}
-		{autofocus}
-		class="font-mono text-xs"
-		spellcheck="false"
-		autocomplete="off"
-		role="combobox"
-		aria-expanded={open}
-		aria-autocomplete="list"
-		oninput={() => fetchSuggestions(value)}
-		onfocus={() => fetchSuggestions(value)}
-		onblur={() => setTimeout(() => (open = false), 120)}
-		{onkeydown}
-	/>
-	{#if open}
-		<ul
-			class="absolute top-full right-0 left-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border bg-popover p-1 shadow-lg"
-			role="listbox"
-		>
+<Popover.Root bind:open>
+	<div class={cn('relative', className)}>
+		<Input
+			bind:ref={input}
+			{id}
+			bind:value
+			{placeholder}
+			{autofocus}
+			class="font-mono text-xs"
+			spellcheck="false"
+			autocomplete="off"
+			role="combobox"
+			aria-expanded={open}
+			aria-autocomplete="list"
+			oninput={() => fetchSuggestions(value)}
+			onfocus={() => fetchSuggestions(value)}
+			onblur={() => setTimeout(() => (open = false), 120)}
+			{onkeydown}
+		/>
+	</div>
+	<Popover.Content
+		customAnchor={input}
+		side="bottom"
+		align="start"
+		trapFocus={false}
+		onOpenAutoFocus={(e) => e.preventDefault()}
+		onCloseAutoFocus={(e) => e.preventDefault()}
+		class="max-h-60 w-(--bits-popover-anchor-width) gap-0 overflow-y-auto p-1"
+	>
+		<ul role="listbox">
 			{#each suggestions as suggestion, i (suggestion)}
 				<li role="option" aria-selected={i === active}>
 					<button
 						type="button"
+						tabindex="-1"
 						class={cn(
 							'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left font-mono text-xs',
 							i === active ? 'bg-accent' : 'hover:bg-muted'
@@ -134,5 +149,5 @@
 				</li>
 			{/each}
 		</ul>
-	{/if}
-</div>
+	</Popover.Content>
+</Popover.Root>

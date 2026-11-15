@@ -12,8 +12,8 @@ export interface Shortcut {
 
 /** Listed in the shortcuts help dialog. The last two are handled by their components. */
 export const SHORTCUTS: Shortcut[] = [
-	{ keys: 'Ctrl+N', description: 'Split the focused pane' },
-	{ keys: 'Ctrl+W', description: 'Close the focused pane' },
+	{ keys: 'Ctrl+N', description: 'Split the focused pane (outside a terminal)' },
+	{ keys: 'Ctrl+W', description: 'Close the focused pane (outside a terminal)' },
 	{ keys: 'Ctrl+1 … Ctrl+4', description: 'Focus pane 1–4 (reading order)' },
 	{ keys: 'Ctrl+Tab', description: 'Next tab' },
 	{ keys: 'Ctrl+Shift+Tab', description: 'Previous tab' },
@@ -27,6 +27,16 @@ export const SHORTCUTS: Shortcut[] = [
 	{ keys: 'Esc', description: 'Close the topmost dialog or menu' }
 ];
 
+/**
+ * Plain Ctrl+letter keys that programs in a terminal rely on (nano: Ctrl+W search,
+ * readline: Ctrl+W delete word, Ctrl+N next line). They reach the terminal while it has focus.
+ */
+const TERMINAL_KEYS = ['n', 'w'];
+
+function inTerminal(e: KeyboardEvent): boolean {
+	return e.target instanceof Element && e.target.closest('.xterm') !== null;
+}
+
 /** Returns true when the event was a workspace shortcut and has been handled. */
 export function handleShortcut(e: KeyboardEvent): boolean {
 	if (!e.ctrlKey && !e.metaKey) return false;
@@ -34,6 +44,8 @@ export function handleShortcut(e: KeyboardEvent): boolean {
 	const plain = !e.shiftKey && !e.altKey;
 	const shift = e.shiftKey && !e.altKey;
 	const alt = e.altKey && !e.shiftKey;
+
+	if (plain && TERMINAL_KEYS.includes(key) && inTerminal(e)) return false;
 
 	if (plain && key === 'n') {
 		workspace.split('vertical');

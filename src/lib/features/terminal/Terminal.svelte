@@ -47,10 +47,14 @@
 	const pane = usePane();
 	/** Component instances by session id (kept out of reactive state). */
 	const views: Record<string, TerminalView | undefined> = {};
+	const editors: Record<string, FileEditor | undefined> = {};
 	const firstId = uid();
 	let sessions = $state<Session[]>([{ id: firstId, target: { kind: 'host' }, running: false }]);
 	let activeId = $state(firstId);
-	let editing = $state<string | null>(null);
+	/** Files open in the editor; each has its own tab next to the shells and stays open while hidden. */
+	let files = $state<string[]>([]);
+	/** The file whose editor is shown, or null when a shell is shown. */
+	let activeFile = $state<string | null>(null);
 	let commandsOpen = $state(false);
 	let commands = $state<SavedCommand[] | null>(null);
 	let commandFilter = $state('');
@@ -61,12 +65,23 @@
 
 	const active = $derived(sessions.find((s) => s.id === activeId) ?? sessions[0]);
 	const label = (s: Session) => (s.target.kind === 'container' ? s.target.container : 'Server shell');
+	const fileName = (path: string) => path.split('/').pop() || path;
 
 	function addSession(target: TerminalTarget): void {
 		const session: Session = { id: uid(), target, running: false };
 		sessions.push(session);
 		activeId = session.id;
-		editing = null;
+		activeFile = null;
+	}
+
+	function openFile(path: string): void {
+		if (!files.includes(path)) files.push(path);
+		activeFile = path;
+	}
+
+	function closeFile(path: string): void {
+		files = files.filter((f) => f !== path);
+		if (activeFile === path) activeFile = null;
 	}
 
 	async function closeSession(session: Session): Promise<void> {
@@ -91,7 +106,7 @@
 		if (!request) return;
 		if (request.kind === 'container')
 			addSession({ kind: 'container', container: request.container, shell: request.shell });
-		else editing = request.path;
+		else openFile(request.path);
 	});
 
 	// A live shell makes closing the pane ask first.
@@ -157,7 +172,7 @@
 	}
 
 	export function onReselect(): void {
-		editing = null;
+		activeFile = null;
 	}
 </script>
 
@@ -168,7 +183,7 @@
 				<div
 					class={cn(
 						'group flex h-7 shrink-0 items-center gap-1.5 rounded-md pr-1 pl-2 text-xs',
-						session.id === activeId && !editing
+						session.id === activeId && !activeFile
 							? 'bg-muted font-medium'
 							: 'text-muted-foreground hover:bg-muted/60'
 					)}
@@ -176,11 +191,11 @@
 					<button
 						type="button"
 						role="tab"
-						aria-selected={session.id === activeId}
+						aria-selected={session.id === activeId && !activeFile}
 						class="flex items-center gap-1.5"
 						onclick={() => {
 							activeId = session.id;
-							editing = null;
+							activeFile = null;
 						}}
 					>
 						{#if session.target.kind === 'container'}<Box class="size-3.5 text-info" />{/if}
@@ -194,6 +209,34 @@
 						class="rounded p-0.5 opacity-60 hover:text-foreground hover:opacity-100"
 						aria-label="Close terminal"
 						onclick={() => closeSession(session)}
+					>
+						<X class="size-3" />
+					</button>
+				</div>
+			{/each}
+			{#each files as file (file)}
+				<div
+					class={cn(
+						'group flex h-7 shrink-0 items-center gap-1.5 rounded-md pr-1 pl-2 text-xs',
+						file === activeFile ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/60'
+					)}
+				>
+					<button
+						type="button"
+						role="tab"
+						aria-selected={file === activeFile}
+						class="flex items-center gap-1.5"
+						title={file}
+						onclick={() => (activeFile = file)}
+					>
+						<FilePen class="size-3.5" />
+						{fileName(file)}
+					</button>
+					<button
+						type="button"
+						class="rounded p-0.5 opacity-60 hover:text-foreground hover:opacity-100"
+						aria-label="Close editor"
+						onclick={() => editors[file]?.close()}
 					>
 						<X class="size-3" />
 					</button>
@@ -226,18 +269,21 @@
 				<TerminalView
 					bind:this={views[session.id]}
 					target={session.target}
-					active={visible && session.id === activeId && !editing}
+					active={visible && session.id === activeId && !activeFile}
 					onstatus={(running) => (session.running = running)}
-					onedit={(path) => (editing = path)}
+					onedit={openFile}
 				/>
 			{/each}
-			{#if editing}
-				<div class="absolute inset-0 z-10 bg-background">
-					{#key editing}
-						<FileEditor path={editing} onclose={() => (editing = null)} />
-					{/key}
+			{#each files as file (file)}
+				<div class="absolute inset-0 z-10 bg-background" class:hidden={file !== activeFile}>
+					<FileEditor
+						bind:this={editors[file]}
+						path={file}
+						active={visible && file === activeFile}
+						onclose={() => closeFile(file)}
+					/>
 				</div>
-			{/if}
+			{/each}
 		</div>
 
 		{#if commandsOpen}
@@ -310,7 +356,7 @@
 		onsubmit={(path) => {
 			if (path.startsWith('/')) {
 				pathDialog = false;
-				editing = path;
+				openFile(path);
 			}
 		}}
 	/>
@@ -320,7 +366,7 @@
 			disabled={!pathValue.trim().startsWith('/')}
 			onclick={() => {
 				pathDialog = false;
-				editing = pathValue.trim();
+				openFile(pathValue.trim());
 			}}
 		>
 			Open
