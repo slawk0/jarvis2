@@ -2,6 +2,23 @@
 
 All notable changes to Jarvis Server Manager. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.1.5 - 2026-11-15
+
+### Added
+
+- Pangolin logs: filter by IP and exclude IPs (comma separated, `10.0.*` matches a prefix), also
+  from a row's context menu.
+
+### Fixed
+
+- Terminal: Ctrl+W and Ctrl+N reach programs in the terminal (nano search, delete word) instead of
+  closing or splitting the pane.
+- Path suggestions now show inside dialogs (Edit file and every other path field).
+- Terminal: a file opened in the editor gets its own tab and stays open with its unsaved changes
+  while you switch to or add another shell.
+- Pangolin logs: the resource filter lists resources again (list requests were rejected by current
+  Pangolin versions).
+
 ## 0.1.4 - 2026-11-10
 
 ### Fixed
